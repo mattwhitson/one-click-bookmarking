@@ -1,5 +1,5 @@
 {
-  "id": "c399fe1c-1dc2-4182-a923-02d1d1456f54",
+  "id": "ba761966-d11e-4e46-8af1-cf04979888d9",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -124,8 +124,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "boolean": {
-          "name": "boolean",
+        "favorite": {
+          "name": "favorite",
           "type": "boolean",
           "primaryKey": false,
           "notNull": true,

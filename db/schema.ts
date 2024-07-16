@@ -60,7 +60,7 @@ export const bookmarks = pgTable(
     id: serial("id").primaryKey(),
     categories: text("category"),
     url: text("url").notNull(),
-    favorite: boolean("boolean").notNull().default(false),
+    favorite: boolean("favorite").notNull().default(false),
     userId: text("user_id")
       .notNull()
       .references(() => users.id),

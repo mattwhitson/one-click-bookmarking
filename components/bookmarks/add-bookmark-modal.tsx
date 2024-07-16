@@ -42,7 +42,8 @@ export function AddBookmarkModal() {
   const onSubmit = async (values: z.infer<typeof newBookmarkSchema>) => {
     const res = await client.api.bookmarks.$post({ json: { ...values } });
     if (res.ok) {
-      toast("Bookmark successfully created");
+      const { message } = await res.json();
+      toast(message);
     } else {
       const error = await res.json();
       console.log(error);

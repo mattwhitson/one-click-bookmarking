@@ -2,7 +2,20 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { auth } from "@/auth";
 
-const unprotectedRoutes = ["/login", "/api/auth", "/api/auth/callback"];
+export const config = {
+  matcher: [
+    /*
+     * Match all paths except for:
+     * 1. /api routes
+     * 2. /_next (Next.js internals)
+     * 3. /_static (inside /public)
+     * 4. all root files inside /public (e.g. /favicon.ico)
+     */
+    "/((?!api/|_next/|_static/|_vercel|[\\w-]+\\.\\w+).*)",
+  ],
+};
+
+const unprotectedRoutes = ["/login"];
 
 const protectedRoutes = ["/api", "/bookmarks"];
 
@@ -22,7 +35,7 @@ export default async function middleware(request: NextRequest) {
       const absoluteURL = new URL("/bookmarks", request.nextUrl.origin);
       return NextResponse.redirect(absoluteURL.toString());
     }
-    return null;
+    return NextResponse.next();
   }
 
   const isProtectedRoute = protectedRoutes.some((prefix) =>
@@ -30,12 +43,9 @@ export default async function middleware(request: NextRequest) {
   );
 
   if (!session && isProtectedRoute) {
-    if (request.nextUrl.pathname.startsWith("/api")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
     const absoluteURL = new URL("/login", request.nextUrl.origin);
     return NextResponse.redirect(absoluteURL.toString());
   }
 
-  return null;
+  return NextResponse.next();
 }
