@@ -8,6 +8,14 @@ body,
   height: 100%;
 }
 
+/*This attribute set in theme-toggle.tsx after mount because when i was putting
+* this transition directly on the body tag it was causing flicker on page reload...
+* I have no idea why this works though
+*/
+body[data-theme-initialized] {
+  transition: background-color 0.3s, color 0.3s;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

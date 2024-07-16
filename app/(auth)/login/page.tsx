@@ -11,7 +11,7 @@ export default function Login() {
           "use server";
           await signIn("google", { redirectTo: "/bookmarks" });
         }}
-        className="flex flex-col space-y-8 text-center mb-20"
+        className="flex flex-col space-y-8 text-center mb-32"
       >
         <Image
           src="/Bookmark-dynamic-gradient.png"
@@ -20,7 +20,7 @@ export default function Login() {
           height={96}
           className="mx-auto"
         />
-        <h2 className="text-2xl font-semibold">One Click Bookmark</h2>
+        <h2 className="text-2xl font-semibold">One Click Bookmarking</h2>
         <Button type="submit">
           <FcGoogle className="mr-3 h-5 w-5" /> Sign in with Google
         </Button>

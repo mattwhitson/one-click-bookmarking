@@ -1,9 +1,6 @@
-"use client";
-
 import { Session } from "next-auth";
-import Link from "next/link";
 import { Button } from "../ui/button";
-import { signOut } from "next-auth/react";
+import { signOut } from "@/auth";
 
 interface Props {
   session: Session | null;
@@ -12,9 +9,16 @@ interface Props {
 export function SignOut({ session }: Props) {
   return (
     session && (
-      <Button className="rounded-2xl" asChild onClick={() => signOut()}>
-        <Link href="/login">Logout</Link>
-      </Button>
+      <form
+        action={async () => {
+          "use server";
+          await signOut({ redirectTo: "/" });
+        }}
+      >
+        <Button className="rounded-2xl" type="submit">
+          Logout
+        </Button>
+      </form>
     )
   );
 }

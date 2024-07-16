@@ -52,7 +52,7 @@ export function ThemeToggle() {
   return (
     <Button
       variant="ghost"
-      className="ml-2 overflow-hidden"
+      className="ml-2 overflow-hidden h-12 w-12 p-0"
       onClick={handleThemeChange}
     >
       {currentTheme === "light" ? (
