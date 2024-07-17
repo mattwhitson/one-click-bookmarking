@@ -37,7 +37,6 @@ import { toast } from "sonner";
 
 export function AddTagModal() {
   const { type, isOpen, onClose, data } = useModalStore();
-
   const isModalOpen = isOpen && type === ModalTypes.AddTag;
 
   const form = useForm<z.infer<typeof newTagSchema>>({
@@ -62,6 +61,9 @@ export function AddTagModal() {
       toast("Something went wrong.");
     }
   };
+
+  if (!isModalOpen) return null;
+
   return (
     <Dialog open={isModalOpen} onOpenChange={onClose}>
       <DialogContent>
@@ -77,16 +79,10 @@ export function AddTagModal() {
           <CommandInput placeholder="Search your tags..." />
           <CommandList>
             <CommandEmpty>No results found.</CommandEmpty>
-            <CommandGroup heading="Suggestions">
-              <CommandItem>Calendar</CommandItem>
-              <CommandItem>Search Emoji</CommandItem>
-              <CommandItem>Calculator</CommandItem>
-            </CommandGroup>
-            <CommandSeparator />
-            <CommandGroup heading="Settings">
-              <CommandItem>Profile</CommandItem>
-              <CommandItem>Billing</CommandItem>
-              <CommandItem>Settings</CommandItem>
+            <CommandGroup heading="Your tags">
+              {data.tags.map(({ id, tag }) => (
+                <CommandItem key={id}>{tag}</CommandItem>
+              ))}
             </CommandGroup>
           </CommandList>
         </Command>

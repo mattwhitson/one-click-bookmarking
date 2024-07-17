@@ -1,9 +1,19 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import { parse } from "node-html-parser";
 import { FiDisc, FiTag } from "react-icons/fi";
+import { BsStar, BsStarFill } from "react-icons/bs";
 import { BookmarkDropdown } from "@/components/bookmarks/bookmark-dropdown";
 import { Tag } from "@/app/api/[[...route]]/bookmarks";
+import { Button } from "../ui/button";
+import {
+  cleanUpUrl,
+  GetMetaInfoTest,
+  Metadata,
+} from "@/hooks/use-get-meta-info";
+import { useEffect, useState } from "react";
 
 interface Props {
   id: number;
@@ -12,109 +22,73 @@ interface Props {
   tags: Tag[];
 }
 
-const metaTypes = [
-  "og:image",
-  "og:title",
-  "og:description",
-  "twitter:image",
-  "og:site_name",
-];
+export function Card({ id, url, favorite, tags }: Props) {
+  const [meta, setMeta] = useState<Metadata>();
 
-export interface Metadata {
-  "og:title": string | undefined;
-  "og:image": string | undefined;
-  "og:description": string | undefined;
-  "og:site_name": string | undefined;
-}
-
-function cleanUpUrl(url: string) {
-  const copy = new URL(url);
-  return copy.hostname;
-}
-
-export async function Card({ id, url, favorite, tags }: Props) {
-  const getMetadata = async (url: string) => {
-    let data: Metadata = {
-      "og:title": undefined,
-      "og:image": undefined,
-      "og:description": undefined,
-      "og:site_name": undefined,
+  useEffect(() => {
+    const handleFetch = async (url: string) => {
+      const meta = await GetMetaInfoTest(url);
+      return meta;
     };
-    try {
-      const res = await fetch(url, {
-        headers: { "User-Agent": "mattwhitson.dev Bot" },
-      });
-      const html = await res.text();
-      const parsedHtml = parse(html);
+    handleFetch(url).then((data) => setMeta(data));
+  }, [url]);
 
-      parsedHtml.querySelectorAll("meta").forEach(({ attributes }) => {
-        const property =
-          attributes.property || attributes.name || attributes.href;
-
-        if (metaTypes.includes(property) && !data[property as keyof Metadata]) {
-          data[property as keyof Metadata] = attributes.content;
-        }
-      });
-
-      if (data["og:image"] === undefined) {
-        data["og:image"] = "/Bookmark-dynamic-gradient.png";
-      }
-
-      // TODO: move to another file because this is messy and also add one for link tags as well (maybe?)
-    } catch (error) {
-      console.log("website is either down or doesn't exist.");
-    }
-    return data;
-  };
-
-  const meta = await getMetadata(url);
   if (!meta) return null;
-  console.log(meta);
   return (
     <div className="flex w-full">
-      <article className="min-w-[25%] min-h-full border-r-[1px] dark:border-zinc-900 flex flex-col py-4">
+      <article className="sm:min-w-[25%] min-h-full border-r-[1px] dark:border-zinc-900 flex flex-col py-4">
         <div className="mt-[0.65rem] relative">
-          <p className="text-end pr-4 text-sm pt-[0.1rem]">Today</p>
+          <p className="text-center pt-[0.1rem] text-xs pl-3 sm:text-sm sm:text-end pr-3 sm:pr-4">
+            Today
+          </p>
           <FiDisc className="w-4 h-4 absolute top-1 right-[-0.5rem] bg-background" />
         </div>
       </article>
-      <article className="flex flex-col gap-y-4 ml-4 mt-2 py-4 w-full">
+      <article className="flex flex-col gap-y-4 px-4 mt-2 py-4 w-full">
         <div className="flex justify-between items-center">
-          <h3 className="text-xl font-semibold">{meta["og:site_name"]}</h3>
-          <BookmarkDropdown bookmarkId={id} />
+          <h3 className="text-xl font-semibold">{meta?.title}</h3>
+          <BookmarkDropdown bookmarkId={id} tags={tags} />
         </div>
         <p className="text-sm text-zinc-800 dark:text-zinc-300 line-clamp-3">
-          {meta["og:description"]}
+          {meta?.description}
         </p>
         <Link
           href={url}
           className="block relative h-64 border-1 w-full sm:w-96 md:w-full mx-auto border-[1px] dark:border-zinc-900 rounded-sm"
         >
           {/*some bug (apparently its on chrome's end https://stackoverflow.com/questions/70454127/image-jumps-during-page-load-object-fit-cover)
-             is momentarily stretch image for a half second after load so i'm cache bursting it to avoid that jank
+             is momentarily stretch image for a half second after load so i'm cache busting it to avoid that jank
+             TODO: change priority to only be first ~5 bookmarks on page
           */}
           <Image
             className="object-contain"
-            src={`${meta["og:image"]!}?${new Date().getTime()}`}
+            src={`${meta?.image}?${new Date().getTime()}`}
             alt="bookmark site image"
             fill
-            loading="lazy"
+            priority
+            sizes="(max-width: 920px) 100%, 24rem"
           />
 
           <p className="absolute bottom-0 left-0 text-sm backdrop-blur-3xl p-1 m-1 rounded-md bg-transparent">
             {cleanUpUrl(url)}
           </p>
+          <Button className="ml-auto p-0 bg-background text-primary hover:bg-background block absolute bottom-2 right-2">
+            <BsStar className="h-6 w-6 text-yellow-500" />
+          </Button>
         </Link>
-        <div className="flex flex-row flex-wrap gap-x-4 items-center">
-          <FiTag className="h-6 w-6 text-cyan-500" />
-          {tags.map(({ id, tag }) => (
-            <p
-              key={id}
-              className="text-sm bg-zinc-300 dark:bg-zinc-800 p-1 rounded-lg"
-            >
-              {tag}
-            </p>
-          ))}
+        <div className="flex flex-row gap-x-4 items-center">
+          <FiTag className="min-h-6 min-w-6 text-cyan-500" />
+          <div className="flex gap-x-4 flex-wrap gap-y-4">
+            {tags[0].id !== null &&
+              tags.map(({ id, tag }) => (
+                <p
+                  key={id}
+                  className="text-sm bg-zinc-300 dark:bg-zinc-800 p-1 rounded-lg text-nowrap"
+                >
+                  {tag}
+                </p>
+              ))}
+          </div>
         </div>
       </article>
     </div>

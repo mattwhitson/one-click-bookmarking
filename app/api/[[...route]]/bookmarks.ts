@@ -20,52 +20,41 @@ export interface BookmarksWithTags {
   tags: Tag[];
 }
 
-// TODO: Change this to validate userID with session, because right now anyone who has credentials could get anyone else's bookmark
 const app = new Hono()
-  .get(
-    "/",
-    validator("query", (value, c) => {
-      const userId = value["userId"];
-      if (!userId || typeof userId !== "string") {
-        throw new HTTPException(404, { message: "Query param missing." });
-      }
-      return {
-        userId,
-      };
-    }),
-    async (c) => {
-      const userId = c.req.query("userId")!;
+  .get("/", async (c) => {
+    const session = await auth();
 
-      try {
-        // TODO: Sort by created at to get newest on top when we update schema
-        const data: BookmarksWithTags[] = await db
-          .select({
-            id: bookmarks.id,
-            url: bookmarks.url,
-            favorite: bookmarks.favorite,
-            createdAt: bookmarks.createdAt,
-            tags: sql<
-              Tag[]
-            >`json_agg(json_build_object('id', ${tags.id}, 'tag', ${tags.tag}))`,
-          })
-          .from(bookmarks)
-          .leftJoin(
-            bookmarksToTags,
-            eq(bookmarks.id, bookmarksToTags.bookmarkId)
-          )
-          .leftJoin(tags, eq(tags.id, bookmarksToTags.tagId))
-          .where(eq(bookmarks.userId, userId))
-          .groupBy(bookmarks.id);
-
-        return c.json({
-          bookmarks: data,
-        });
-      } catch (error) {
-        console.log(error);
-        throw new HTTPException(500, { message: "Database Error" });
-      }
+    if (!session || !session.user || !session.user.id) {
+      throw new HTTPException(401, { message: "Unauthorized" });
     }
-  )
+    const userId = session.user.id;
+
+    try {
+      // TODO: Sort by created at to get newest on top when we update schema
+      const data: BookmarksWithTags[] = await db
+        .select({
+          id: bookmarks.id,
+          url: bookmarks.url,
+          favorite: bookmarks.favorite,
+          createdAt: bookmarks.createdAt,
+          tags: sql<
+            Tag[]
+          >`json_agg(json_build_object('id', ${tags.id}, 'tag', ${tags.tag}))`,
+        })
+        .from(bookmarks)
+        .leftJoin(bookmarksToTags, eq(bookmarks.id, bookmarksToTags.bookmarkId))
+        .leftJoin(tags, eq(tags.id, bookmarksToTags.tagId))
+        .where(eq(bookmarks.userId, userId))
+        .groupBy(bookmarks.id);
+
+      return c.json({
+        bookmarks: data,
+      });
+    } catch (error) {
+      console.log(error);
+      throw new HTTPException(500, { message: "Database Error" });
+    }
+  })
 
   .post("/", zValidator("json", newBookmarkSchema), async (c) => {
     let { url } = c.req.valid("json");

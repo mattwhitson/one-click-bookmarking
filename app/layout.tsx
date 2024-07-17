@@ -16,6 +16,7 @@ export const metadata: Metadata = {
 
 import "./globals.css";
 import { ModalProvider } from "@/components/providers/modal-provider";
+import { QueryProvider } from "@/components/providers/query-provider";
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -25,10 +26,12 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={font.className}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <Header />
-          {children}
-          <Toaster />
-          <ModalProvider />
+          <QueryProvider>
+            <Header />
+            {children}
+            <Toaster />
+            <ModalProvider />
+          </QueryProvider>
         </ThemeProvider>
       </body>
     </html>

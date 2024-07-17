@@ -12,12 +12,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useState } from "react";
 import { ModalTypes, useModalStore } from "@/hooks/modal-store";
+import { Tag } from "@/app/api/[[...route]]/bookmarks";
 
 interface Props {
   bookmarkId: number;
+  tags: Tag[];
 }
 
-export function BookmarkDropdown({ bookmarkId }: Props) {
+export function BookmarkDropdown({ bookmarkId, tags }: Props) {
   const { onOpen } = useModalStore();
   return (
     <DropdownMenu>
@@ -30,7 +32,9 @@ export function BookmarkDropdown({ bookmarkId }: Props) {
         <DropdownMenuLabel>Options</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          onClick={() => onOpen(ModalTypes.AddTag, { id: bookmarkId })}
+          onClick={() =>
+            onOpen(ModalTypes.AddTag, { id: bookmarkId, tags: tags })
+          }
         >
           Add tag
         </DropdownMenuItem>
