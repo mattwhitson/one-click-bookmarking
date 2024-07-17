@@ -3,11 +3,24 @@ import { validator } from "hono/validator";
 import { HTTPException } from "hono/http-exception";
 import { zValidator } from "@hono/zod-validator";
 import { db } from "@/db";
-import { bookmarks, bookmarksToTags } from "@/db/schema";
+import { bookmarks, bookmarksToTags, tags } from "@/db/schema";
 import { newBookmarkSchema } from "@/lib/zod-schemas";
 import { auth } from "@/auth";
-import { count, eq, or } from "drizzle-orm";
+import { and, asc, count, desc, eq, or, sql } from "drizzle-orm";
 
+export interface Tag {
+  id: number;
+  tag: string;
+}
+export interface BookmarksWithTags {
+  id: number;
+  url: string;
+  favorite: boolean;
+  createdAt: Date | null; // TODO: Remove null when we update the schema
+  tags: Tag[];
+}
+
+// TODO: Change this to validate userID with session, because right now anyone who has credentials could get anyone else's bookmark
 const app = new Hono()
   .get(
     "/",
@@ -21,31 +34,36 @@ const app = new Hono()
       };
     }),
     async (c) => {
-      const userId = c.req.query("userId");
-      let data;
+      const userId = c.req.query("userId")!;
+
       try {
-        data = await db
+        // TODO: Sort by created at to get newest on top when we update schema
+        const data: BookmarksWithTags[] = await db
           .select({
             id: bookmarks.id,
-            tags: bookmarks.tagsIds,
             url: bookmarks.url,
             favorite: bookmarks.favorite,
             createdAt: bookmarks.createdAt,
+            tags: sql<
+              Tag[]
+            >`json_agg(json_build_object('id', ${tags.id}, 'tag', ${tags.tag}))`,
           })
           .from(bookmarks)
-          .where(eq(bookmarks.userId, userId!))
           .leftJoin(
             bookmarksToTags,
             eq(bookmarks.id, bookmarksToTags.bookmarkId)
-          );
+          )
+          .leftJoin(tags, eq(tags.id, bookmarksToTags.tagId))
+          .where(eq(bookmarks.userId, userId))
+          .groupBy(bookmarks.id);
+
+        return c.json({
+          bookmarks: data,
+        });
       } catch (error) {
         console.log(error);
         throw new HTTPException(500, { message: "Database Error" });
       }
-
-      return c.json({
-        bookmarks: data,
-      });
     }
   )
 
@@ -60,6 +78,8 @@ const app = new Hono()
       throw new HTTPException(400, { message: "Missing url" });
     }
 
+    // All this is basically just making sure this isn't already in the database and, if it is, stop the new bookmark creation
+    // Also removing trailing slashes before to ensure we don't add the same bookmark twice
     if (url[url.length - 1] === "/") url = url.slice(0, -1);
 
     const copyUrl = new URL(url);

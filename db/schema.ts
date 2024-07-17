@@ -61,8 +61,7 @@ export const bookmarks = pgTable(
     id: serial("id").primaryKey(),
     url: text("url").notNull(),
     favorite: boolean("favorite").notNull().default(false),
-    createdAt: timestamp("created_at", { withTimezone: true }),
-    tagsIds: integer("tags_ids").references(() => tags.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
     userId: text("user_id")
       .notNull()
       .references(() => users.id),

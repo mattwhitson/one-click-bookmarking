@@ -1,12 +1,15 @@
-import { parse } from "node-html-parser";
 import Image from "next/image";
 import Link from "next/link";
-import { FiDisc } from "react-icons/fi";
+import { parse } from "node-html-parser";
+import { FiDisc, FiTag } from "react-icons/fi";
+import { BookmarkDropdown } from "@/components/bookmarks/bookmark-dropdown";
+import { Tag } from "@/app/api/[[...route]]/bookmarks";
 
 interface Props {
   id: number;
   url: string;
   favorite: boolean;
+  tags: Tag[];
 }
 
 const metaTypes = [
@@ -29,7 +32,7 @@ function cleanUpUrl(url: string) {
   return copy.hostname;
 }
 
-export async function Card({ id, url, favorite }: Props) {
+export async function Card({ id, url, favorite, tags }: Props) {
   const getMetadata = async (url: string) => {
     let data: Metadata = {
       "og:title": undefined,
@@ -54,7 +57,7 @@ export async function Card({ id, url, favorite }: Props) {
       });
 
       if (data["og:image"] === undefined) {
-        data["og:image"] = "/placeholder-image.jpg";
+        data["og:image"] = "/Bookmark-dynamic-gradient.png";
       }
 
       // TODO: move to another file because this is messy and also add one for link tags as well (maybe?)
@@ -65,6 +68,7 @@ export async function Card({ id, url, favorite }: Props) {
   };
 
   const meta = await getMetadata(url);
+  if (!meta) return null;
   console.log(meta);
   return (
     <div className="flex w-full">
@@ -75,7 +79,10 @@ export async function Card({ id, url, favorite }: Props) {
         </div>
       </article>
       <article className="flex flex-col gap-y-4 ml-4 mt-2 py-4 w-full">
-        <h3 className="text-xl font-semibold">{meta["og:site_name"]}</h3>
+        <div className="flex justify-between items-center">
+          <h3 className="text-xl font-semibold">{meta["og:site_name"]}</h3>
+          <BookmarkDropdown bookmarkId={id} />
+        </div>
         <p className="text-sm text-zinc-800 dark:text-zinc-300 line-clamp-3">
           {meta["og:description"]}
         </p>
@@ -83,19 +90,32 @@ export async function Card({ id, url, favorite }: Props) {
           href={url}
           className="block relative h-64 border-1 w-full sm:w-96 md:w-full mx-auto border-[1px] dark:border-zinc-900 rounded-sm"
         >
+          {/*some bug (apparently its on chrome's end https://stackoverflow.com/questions/70454127/image-jumps-during-page-load-object-fit-cover)
+             is momentarily stretch image for a half second after load so i'm cache bursting it to avoid that jank
+          */}
           <Image
-            src={meta["og:image"]!}
+            className="object-contain"
+            src={`${meta["og:image"]!}?${new Date().getTime()}`}
             alt="bookmark site image"
             fill
-            className="object-contain"
             loading="lazy"
-            sizes="(max-width: 768px) 80vw, 16rem"
           />
 
           <p className="absolute bottom-0 left-0 text-sm backdrop-blur-3xl p-1 m-1 rounded-md bg-transparent">
             {cleanUpUrl(url)}
           </p>
         </Link>
+        <div className="flex flex-row flex-wrap gap-x-4 items-center">
+          <FiTag className="h-6 w-6 text-cyan-500" />
+          {tags.map(({ id, tag }) => (
+            <p
+              key={id}
+              className="text-sm bg-zinc-300 dark:bg-zinc-800 p-1 rounded-lg"
+            >
+              {tag}
+            </p>
+          ))}
+        </div>
       </article>
     </div>
   );

@@ -1,5 +1,5 @@
 {
-  "id": "e01ce235-9e5f-48fb-8fb8-b2f5274e7306",
+  "id": "e411ae47-6dbf-42dc-8127-1b78b3475885",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -131,12 +131,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "tags_ids": {
-          "name": "tags_ids",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
         "user_id": {
           "name": "user_id",
           "type": "text",
@@ -177,19 +171,6 @@
         }
       },
       "foreignKeys": {
-        "bookmarks_tags_ids_tags_id_fk": {
-          "name": "bookmarks_tags_ids_tags_id_fk",
-          "tableFrom": "bookmarks",
-          "tableTo": "tags",
-          "columnsFrom": [
-            "tags_ids"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
         "bookmarks_user_id_user_id_fk": {
           "name": "bookmarks_user_id_user_id_fk",
           "tableFrom": "bookmarks",
