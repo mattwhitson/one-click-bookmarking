@@ -7,7 +7,7 @@ interface Props {
 
 export default function Layout({ children }: Props) {
   return (
-    <div className="flex max-w-4xl min-h-[calc(100%-5rem)] mx-auto">
+    <div className="flex max-w-4xl min-h-[calc(100%-4.05rem)] mx-auto">
       <Sidebar />
       {children}
     </div>

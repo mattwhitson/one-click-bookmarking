@@ -1,5 +1,5 @@
 {
-  "id": "ba761966-d11e-4e46-8af1-cf04979888d9",
+  "id": "e01ce235-9e5f-48fb-8fb8-b2f5274e7306",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -112,12 +112,6 @@
           "primaryKey": true,
           "notNull": true
         },
-        "category": {
-          "name": "category",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
         "url": {
           "name": "url",
           "type": "text",
@@ -130,6 +124,18 @@
           "primaryKey": false,
           "notNull": true,
           "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tags_ids": {
+          "name": "tags_ids",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
         },
         "user_id": {
           "name": "user_id",
@@ -153,15 +159,92 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "url_index": {
+          "name": "url_index",
+          "columns": [
+            {
+              "expression": "url",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
+        "bookmarks_tags_ids_tags_id_fk": {
+          "name": "bookmarks_tags_ids_tags_id_fk",
+          "tableFrom": "bookmarks",
+          "tableTo": "tags",
+          "columnsFrom": [
+            "tags_ids"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
         "bookmarks_user_id_user_id_fk": {
           "name": "bookmarks_user_id_user_id_fk",
           "tableFrom": "bookmarks",
           "tableTo": "user",
           "columnsFrom": [
             "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.bookmarks_to_tags": {
+      "name": "bookmarks_to_tags",
+      "schema": "",
+      "columns": {
+        "bookmark_id": {
+          "name": "bookmark_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tag_id": {
+          "name": "tag_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "bookmarks_to_tags_bookmark_id_bookmarks_id_fk": {
+          "name": "bookmarks_to_tags_bookmark_id_bookmarks_id_fk",
+          "tableFrom": "bookmarks_to_tags",
+          "tableTo": "bookmarks",
+          "columnsFrom": [
+            "bookmark_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "bookmarks_to_tags_tag_id_tags_id_fk": {
+          "name": "bookmarks_to_tags_tag_id_tags_id_fk",
+          "tableFrom": "bookmarks_to_tags",
+          "tableTo": "tags",
+          "columnsFrom": [
+            "tag_id"
           ],
           "columnsTo": [
             "id"
@@ -209,6 +292,48 @@
             "id"
           ],
           "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.tags": {
+      "name": "tags",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "text": {
+          "name": "text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "tags_user_id_user_id_fk": {
+          "name": "tags_user_id_user_id_fk",
+          "tableFrom": "tags",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
           "onUpdate": "no action"
         }
       },

@@ -3,10 +3,10 @@ import { validator } from "hono/validator";
 import { HTTPException } from "hono/http-exception";
 import { zValidator } from "@hono/zod-validator";
 import { db } from "@/db";
-import { bookmarks } from "@/db/schema";
+import { bookmarks, bookmarksToTags } from "@/db/schema";
 import { newBookmarkSchema } from "@/lib/zod-schemas";
 import { auth } from "@/auth";
-import { count, eq } from "drizzle-orm";
+import { count, eq, or } from "drizzle-orm";
 
 const app = new Hono()
   .get(
@@ -27,12 +27,17 @@ const app = new Hono()
         data = await db
           .select({
             id: bookmarks.id,
-            categories: bookmarks.categories,
+            tags: bookmarks.tagsIds,
             url: bookmarks.url,
             favorite: bookmarks.favorite,
+            createdAt: bookmarks.createdAt,
           })
           .from(bookmarks)
-          .where(eq(bookmarks.userId, userId!));
+          .where(eq(bookmarks.userId, userId!))
+          .leftJoin(
+            bookmarksToTags,
+            eq(bookmarks.id, bookmarksToTags.bookmarkId)
+          );
       } catch (error) {
         console.log(error);
         throw new HTTPException(500, { message: "Database Error" });
@@ -55,29 +60,25 @@ const app = new Hono()
       throw new HTTPException(400, { message: "Missing url" });
     }
 
+    if (url[url.length - 1] === "/") url = url.slice(0, -1);
+
     const copyUrl = new URL(url);
     const host = copyUrl.hostname;
     const domains = host.split(".");
 
     let copy = copyUrl.toString();
-    if (
-      domains.length === 2 ||
-      (domains.length === 3 &&
-        domains[domains.length - 2] === "co" &&
-        domains[domains.length - 1] === "uk")
-    ) {
+    if (domains.length === 2 || domains.length === 3) {
       if (copy.startsWith("https://")) {
         copy = copy.slice(0, 8) + "www." + copy.slice(8);
       } else {
         copy = copy.slice(0, 7) + "www." + copy.slice(7);
       }
     }
-    if (copy[copy.length - 1] === "/") copy = copy.slice(0, -1);
 
     const result = await db
       .select({ count: count() })
       .from(bookmarks)
-      .where(eq(bookmarks.url, copy));
+      .where(or(eq(bookmarks.url, copy), eq(bookmarks.url, url)));
 
     if (result[0].count > 0) {
       return c.json({ message: "Bookmark already exists!" }, 200);
@@ -85,9 +86,8 @@ const app = new Hono()
 
     try {
       await db.insert(bookmarks).values({
-        url: copy,
+        url,
         favorite: false,
-        categories: "test",
         userId: session.user.id,
       });
     } catch (error) {

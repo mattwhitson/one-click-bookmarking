@@ -51,16 +51,18 @@ export const users = pgTable("user", {
 });
 
 export const usersRelations = relations(users, ({ many }) => ({
-  posts: many(bookmarks),
+  bookmarks: many(bookmarks),
+  tags: many(tags),
 }));
 
 export const bookmarks = pgTable(
   "bookmarks",
   {
     id: serial("id").primaryKey(),
-    categories: text("category"),
     url: text("url").notNull(),
     favorite: boolean("favorite").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }),
+    tagsIds: integer("tags_ids").references(() => tags.id),
     userId: text("user_id")
       .notNull()
       .references(() => users.id),
@@ -68,13 +70,51 @@ export const bookmarks = pgTable(
   (table) => {
     return {
       userIdIndex: index("user_id_index").on(table.userId),
+      url: index("url_index").on(table.url),
     };
   }
 );
 
-export const postsRelations = relations(bookmarks, ({ one }) => ({
+export const bookmarksRelations = relations(bookmarks, ({ one, many }) => ({
   user: one(users),
+  bookmarksToTags: many(tags),
 }));
+
+export const tags = pgTable("tags", {
+  id: serial("id").primaryKey(),
+  tag: text("text").notNull(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id),
+});
+
+export const tagsRelations = relations(tags, ({ one, many }) => ({
+  user: one(users),
+  bookmarksToTags: many(bookmarks),
+}));
+
+export const bookmarksToTags = pgTable("bookmarks_to_tags", {
+  bookmarkId: integer("bookmark_id")
+    .notNull()
+    .references(() => bookmarks.id),
+  tagId: integer("tag_id")
+    .notNull()
+    .references(() => tags.id),
+});
+
+export const bookmarksToTagsRelations = relations(
+  bookmarksToTags,
+  ({ one }) => ({
+    bookmark: one(bookmarks, {
+      fields: [bookmarksToTags.bookmarkId],
+      references: [bookmarks.id],
+    }),
+    tag: one(tags, {
+      fields: [bookmarksToTags.tagId],
+      references: [tags.id],
+    }),
+  })
+);
 
 // O-Auth stuff
 export const accounts = pgTable(
