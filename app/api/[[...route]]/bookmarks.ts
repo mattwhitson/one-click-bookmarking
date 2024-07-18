@@ -47,6 +47,10 @@ const app = new Hono()
         .where(eq(bookmarks.userId, userId))
         .groupBy(bookmarks.id);
 
+      for (const bookmark of data) {
+        if (bookmark.tags[0].id === null) bookmark.tags = [];
+      }
+
       return c.json({
         bookmarks: data,
       });
@@ -140,6 +144,38 @@ const app = new Hono()
         throw new HTTPException(500, { message: "Database Error" });
       }
       return c.json({ data: updatedBookmark[0] });
+    }
+  )
+  //TODO: change schema and make it a cascade delete for this bad boy and also for tags,
+  // because right now i can't delete them without deleting all the rows in the child table
+  // connecting bookmarks and tags
+  .delete(
+    "/:bookmarkId",
+    validator("param", (value, c) => {
+      const bookmarkId = value["bookmarkId"];
+      if (!bookmarkId || typeof bookmarkId !== "string") {
+        throw new HTTPException(404, { message: "Missing bookmark id" });
+      }
+
+      return {
+        bookmarkId,
+      };
+    }),
+    async (c) => {
+      const bookmarkId = c.req.param("bookmarkId");
+      const session = await auth();
+
+      if (!session || !session.user || !session.user.id) {
+        throw new HTTPException(401, { message: "Unauthorized" });
+      }
+
+      try {
+        await db.delete(bookmarks).where(eq(bookmarks.id, Number(bookmarkId)));
+        return c.json({ message: "Deletion succeeded" }, 200);
+      } catch (error) {
+        console.log(error);
+        throw new HTTPException(500, { message: "Database Error" });
+      }
     }
   );
 

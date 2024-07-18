@@ -19,17 +19,19 @@ interface Props {
   url: string;
   favorite: boolean;
   tags: Tag[];
+  allTags: Tag[] | undefined;
 }
 
-interface Bookmark {
+export interface Bookmark {
   id: number;
   url: string;
   favorite: boolean;
   createdAt: string | null;
   userId: string;
+  tags: Tag[];
 }
 
-export function Card({ id, url, favorite, tags }: Props) {
+export function Card({ id, url, favorite, tags, allTags }: Props) {
   const { data: meta } = useGetMetaInfo(url);
   const queryClient = useQueryClient();
 
@@ -39,10 +41,11 @@ export function Card({ id, url, favorite, tags }: Props) {
         json: { favorite: value },
         param: { id: String(id) },
       });
-      if (res && !res.ok) {
+      if (!res.ok) {
         const error = await res.json();
         toast("Something went wrong...");
       }
+
       const { data } = await res.json();
       return data;
     },
@@ -111,16 +114,14 @@ export function Card({ id, url, favorite, tags }: Props) {
         <div className="flex flex-row gap-x-4 items-center">
           <FiTag className="min-h-6 min-w-6 text-cyan-500" />
           <div className="flex gap-x-4 flex-wrap gap-y-4">
-            {tags &&
-              tags[0].id !== null &&
-              tags.map(({ id, tag }) => (
-                <p
-                  key={id}
-                  className="text-sm bg-zinc-300 dark:bg-zinc-800 p-1 rounded-lg text-nowrap"
-                >
-                  {tag}
-                </p>
-              ))}
+            {tags.map(({ id, tag }) => (
+              <p
+                key={id}
+                className="text-sm bg-zinc-300 dark:bg-zinc-800 p-1 rounded-lg text-nowrap"
+              >
+                {tag}
+              </p>
+            ))}
           </div>
         </div>
       </article>

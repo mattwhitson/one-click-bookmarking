@@ -23,12 +23,33 @@ async function getBookmarks() {
   return bookmarks;
 }
 
+async function getTags() {
+  const session = await auth();
+  if (!session || !session.user?.id) redirect("/login");
+
+  const response = await client.api.tags.$get({
+    query: { userId: session.user?.id },
+  });
+  if (!response.ok) {
+    throw new Error("Failed to fetch your bookmarks!");
+  }
+
+  const { tags } = await response.json();
+
+  return tags;
+}
+
 export default async function Favorites() {
   const queryClient = new QueryClient();
 
   await queryClient.prefetchQuery({
     queryKey: ["bookmarks"],
     queryFn: getBookmarks,
+  });
+
+  await queryClient.prefetchQuery({
+    queryKey: ["tags"],
+    queryFn: getTags,
   });
 
   return (

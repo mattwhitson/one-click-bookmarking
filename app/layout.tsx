@@ -17,6 +17,7 @@ export const metadata: Metadata = {
 import "./globals.css";
 import { ModalProvider } from "@/components/providers/modal-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
+import { SessionProvider } from "next-auth/react";
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -26,12 +27,14 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={font.className}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <QueryProvider>
-            <Header />
-            {children}
-            <Toaster />
-            <ModalProvider />
-          </QueryProvider>
+          <SessionProvider>
+            <QueryProvider>
+              <Header />
+              {children}
+              <Toaster />
+              <ModalProvider />
+            </QueryProvider>
+          </SessionProvider>
         </ThemeProvider>
       </body>
     </html>

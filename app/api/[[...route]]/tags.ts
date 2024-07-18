@@ -44,6 +44,7 @@ const app = new Hono()
     "/",
     zValidator("json", newTagSchema),
     validator("json", (value, c) => {
+      console.log(value);
       const bookmarkId = value["bookmarkId"];
       if (!bookmarkId || typeof bookmarkId !== "number") {
         throw new HTTPException(404, { message: "Query param missing." });
@@ -92,18 +93,18 @@ const app = new Hono()
             tag,
             userId,
           })
-          .returning({ id: tags.id });
+          .returning();
 
         await db.insert(bookmarksToTags).values({
           tagId: newTag[0].id,
           bookmarkId,
         });
+
+        return c.json({ tag: newTag[0] }, 200);
       } catch (error) {
         console.log(error);
         throw new HTTPException(500, { message: "Database Error" });
       }
-
-      return c.json({ message: "Successfully created bookmark" }, 200);
     }
   );
 

@@ -34,6 +34,9 @@ import { newTagSchema } from "@/lib/zod-schemas";
 import { Button } from "../ui/button";
 import { client } from "@/lib/hono";
 import { toast } from "sonner";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Bookmark } from "./card";
+import { Tag } from "@/app/api/[[...route]]/bookmarks";
 
 export function AddTagModal() {
   const { type, isOpen, onClose, data } = useModalStore();
@@ -46,25 +49,45 @@ export function AddTagModal() {
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof newTagSchema>) => {
-    console.log(values);
-    const res = await client.api.tags.$post({
-      json: { tag: values.tag, bookmarkId: data.id },
-    });
-    if (res.ok) {
-      const { message } = await res.json();
-      toast(message);
-      onClose();
-    } else {
-      console.log("hi");
+  const queryClient = useQueryClient();
+  const { mutate, isPending } = useMutation({
+    mutationFn: async (values: { tag: string; bookmarkId: number }) => {
+      const res = await client.api.tags.$post({
+        json: { tag: values.tag, bookmarkId: values.bookmarkId },
+      });
+      console.log(res);
+      if (res.ok) {
+        const { tag } = await res.json();
+        toast("Tag successfully created");
+        return tag;
+      }
       const error = await res.json();
-      console.log(error);
       toast(error.error);
-    }
+      throw error;
+    },
+    onSuccess(result, variables) {
+      queryClient.setQueryData(["bookmarks"], (prev: Bookmark[]) =>
+        prev?.map((post) =>
+          post.id === variables.bookmarkId
+            ? {
+                ...post,
+                tags: [...post.tags, { id: result.id, tag: result.tag }],
+              }
+            : post
+        )
+      );
+      queryClient.setQueryData(["tags"], (prev: Tag[]) => {
+        prev.push({ id: result?.id, tag: result?.tag });
+      });
+    },
+  });
+
+  const onSubmit = async (values: z.infer<typeof newTagSchema>) => {
+    mutate({ tag: values.tag, bookmarkId: data.id });
+    onClose();
   };
 
   if (!isModalOpen) return null;
-
   return (
     <Dialog open={isModalOpen} onOpenChange={onClose}>
       <DialogContent>

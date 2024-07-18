@@ -8,9 +8,19 @@ body,
   height: 100%;
 }
 
+/* these body and :root styles were needed to stop very annoying layout shifts from happening
+   when the scrollbar appeared */
+body {
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+:root {
+  overflow: hidden;
+}
+
 /*This attribute set in theme-toggle.tsx after mount because when i was putting
 * this transition directly on the body tag it was causing flicker on page reload...
-* I have no idea why this works though
 */
 body[data-theme-initialized] {
   transition: background-color 0.3s, color 0.3s;
