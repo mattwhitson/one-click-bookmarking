@@ -1,4 +1,5 @@
 import { Tag } from "@/app/api/[[...route]]/bookmarks";
+import { Bookmark } from "@/components/bookmarks/card";
 import { create } from "zustand";
 
 export enum ModalTypes {
@@ -7,7 +8,7 @@ export enum ModalTypes {
 }
 
 export type BookmarkData = {
-  id: number;
+  bookmark: Bookmark;
   tags: Tag[];
 };
 

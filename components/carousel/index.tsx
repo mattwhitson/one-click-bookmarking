@@ -7,31 +7,31 @@ const CARDS = [
   {
     image: "/Bookmark-dynamic-gradient.png",
     alt: "Profile picture",
-    name: "My mom",
+    name: "Mom",
     testimonial: "Now it's super easy to save recipes I find!",
   },
   {
     image: "/Bookmark-dynamic-gradient.png",
     alt: "Profile picture",
-    name: "My dad",
+    name: "Dad",
     testimonial: "What's a bookmark?",
   },
   {
     image: "/Bookmark-dynamic-gradient.png",
     alt: "Profile picture",
-    name: "My sister",
+    name: "Sister",
     testimonial: "Cool bro!",
   },
   {
     image: "/Bookmark-dynamic-gradient.png",
     alt: "Profile picture",
-    name: "My brother",
+    name: "Brother",
     testimonial: "Doesn't chrome already do that for you?",
   },
   {
     image: "/Bookmark-dynamic-gradient.png",
     alt: "Profile picture",
-    name: "My homie Joe",
+    name: "Homie Joe",
     testimonial: "Cool bro!",
   },
 ];

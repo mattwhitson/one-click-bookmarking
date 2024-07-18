@@ -19,7 +19,6 @@ async function getBookmarks() {
   }
 
   const { bookmarks } = await response.json();
-
   return bookmarks;
 }
 
@@ -35,7 +34,6 @@ async function getTags() {
   }
 
   const { tags } = await response.json();
-
   return tags;
 }
 

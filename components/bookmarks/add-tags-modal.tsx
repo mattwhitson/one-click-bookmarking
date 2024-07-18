@@ -37,10 +37,23 @@ import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Bookmark } from "./card";
 import { Tag } from "@/app/api/[[...route]]/bookmarks";
+import { useEffect, useState } from "react";
 
 export function AddTagModal() {
   const { type, isOpen, onClose, data } = useModalStore();
   const isModalOpen = isOpen && type === ModalTypes.AddTag;
+
+  const [selectedTags, setSelectedTags] = useState<boolean[]>([]);
+
+  useEffect(() => {
+    const result = data.tags?.map((tag) => {
+      for (let i = 0; i < data.bookmark?.tags.length; i++) {
+        if (data.bookmark?.tags[i].id === tag.id) return true;
+      }
+      return false;
+    });
+    setSelectedTags(result);
+  }, [isModalOpen, data?.bookmark?.tags, data?.tags]);
 
   const form = useForm<z.infer<typeof newTagSchema>>({
     resolver: zodResolver(newTagSchema),
@@ -55,7 +68,6 @@ export function AddTagModal() {
       const res = await client.api.tags.$post({
         json: { tag: values.tag, bookmarkId: values.bookmarkId },
       });
-      console.log(res);
       if (res.ok) {
         const { tag } = await res.json();
         toast("Tag successfully created");
@@ -63,7 +75,7 @@ export function AddTagModal() {
       }
       const error = await res.json();
       toast(error.error);
-      throw error;
+      throw error; // why am i throwing here?
     },
     onSuccess(result, variables) {
       queryClient.setQueryData(["bookmarks"], (prev: Bookmark[]) =>
@@ -79,12 +91,12 @@ export function AddTagModal() {
       queryClient.setQueryData(["tags"], (prev: Tag[]) => {
         prev.push({ id: result?.id, tag: result?.tag });
       });
+      setSelectedTags((prev) => [...prev, true]);
     },
   });
 
   const onSubmit = async (values: z.infer<typeof newTagSchema>) => {
-    mutate({ tag: values.tag, bookmarkId: data.id });
-    onClose();
+    mutate({ tag: values.tag, bookmarkId: data.bookmark.id });
   };
 
   if (!isModalOpen) return null;
@@ -103,9 +115,21 @@ export function AddTagModal() {
           <CommandInput placeholder="Search your tags..." />
           <CommandList>
             <CommandEmpty>No results found.</CommandEmpty>
-            <CommandGroup heading="Your tags">
-              {data.tags.map(({ id, tag }) => (
-                <CommandItem key={id}>{tag}</CommandItem>
+            <CommandGroup heading="Your tags" className="-z-50">
+              {data.tags.map(({ id, tag }, index) => (
+                <CommandItem
+                  selected={selectedTags && selectedTags[index]}
+                  key={id}
+                  className="my-1"
+                  onSelect={() => {
+                    console.log("Here");
+                    setSelectedTags((state) =>
+                      state?.map((tag, i) => (i !== index ? tag : !tag))
+                    );
+                  }}
+                >
+                  {tag}
+                </CommandItem>
               ))}
             </CommandGroup>
           </CommandList>

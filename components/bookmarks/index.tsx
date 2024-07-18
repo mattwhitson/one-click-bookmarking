@@ -4,14 +4,12 @@ import { Loader2 } from "lucide-react";
 import { Card } from "@/components/bookmarks/card";
 import { useGetBookmarks } from "@/hooks/use-get-bookmarks";
 import { useGetTags } from "@/hooks/use-get-tags";
-import { useRouter } from "next/navigation";
 
 interface Props {
   favorites: boolean;
 }
 
 export function Bookmarks({ favorites }: Props) {
-  const router = useRouter();
   const { data: session } = useSession();
 
   const { data } = useGetBookmarks();
@@ -26,18 +24,10 @@ export function Bookmarks({ favorites }: Props) {
   } else {
     bookmarks = data;
   }
-
   return (
     <>
-      {bookmarks?.map(({ id, favorite, url, tags }) => (
-        <Card
-          key={id}
-          id={id}
-          favorite={favorite}
-          url={url}
-          tags={tags}
-          allTags={allTags.data}
-        />
+      {bookmarks?.map((bookmark) => (
+        <Card key={bookmark.id} bookmark={bookmark} allTags={allTags.data} />
       ))}
     </>
   );

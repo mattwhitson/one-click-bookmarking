@@ -1,5 +1,5 @@
 {
-  "id": "e411ae47-6dbf-42dc-8127-1b78b3475885",
+  "id": "db257b31-beca-4cca-b2e1-9bc1ecb865ac",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -129,7 +129,8 @@
           "name": "created_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
-          "notNull": false
+          "notNull": false,
+          "default": "now()"
         },
         "user_id": {
           "name": "user_id",
@@ -217,7 +218,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
         "bookmarks_to_tags_tag_id_tags_id_fk": {
@@ -230,7 +231,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },

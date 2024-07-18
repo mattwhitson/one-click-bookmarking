@@ -15,10 +15,7 @@ import { client } from "@/lib/hono";
 import { toast } from "sonner";
 
 interface Props {
-  id: number;
-  url: string;
-  favorite: boolean;
-  tags: Tag[];
+  bookmark: Bookmark;
   allTags: Tag[] | undefined;
 }
 
@@ -27,11 +24,14 @@ export interface Bookmark {
   url: string;
   favorite: boolean;
   createdAt: string | null;
-  userId: string;
+  userId?: string;
   tags: Tag[];
 }
 
-export function Card({ id, url, favorite, tags, allTags }: Props) {
+//TODO: right now loading sucks, need to probably pull the meta loading up and then wait for all the meta tags to load before rendering the posts
+// otherwise it's too janky becaause they load in like a waterfall downawards, one every 1/4  second or so and it looks awful
+export function Card({ bookmark, allTags }: Props) {
+  const { id, url, favorite, tags } = bookmark;
   const { data: meta } = useGetMetaInfo(url);
   const queryClient = useQueryClient();
 
@@ -59,7 +59,7 @@ export function Card({ id, url, favorite, tags, allTags }: Props) {
     },
   });
 
-  if (!meta) return null;
+  //if (!meta) return null;
   return (
     <div className="flex w-full">
       <article className="sm:min-w-[25%] min-h-full border-r-[1px] dark:border-zinc-900 flex flex-col py-4">
@@ -73,7 +73,7 @@ export function Card({ id, url, favorite, tags, allTags }: Props) {
       <article className="flex flex-col gap-y-4 px-4 mt-2 py-4 w-full">
         <div className="flex justify-between items-center">
           <h3 className="text-xl font-semibold">{meta?.title}</h3>
-          <BookmarkDropdown bookmarkId={id} tags={tags} />
+          <BookmarkDropdown bookmark={bookmark} tags={allTags ?? []} />
         </div>
         <p className="text-sm text-zinc-800 dark:text-zinc-300 line-clamp-3">
           {meta?.description}
@@ -84,11 +84,14 @@ export function Card({ id, url, favorite, tags, allTags }: Props) {
         >
           {/*some bug (apparently its on chrome's end https://stackoverflow.com/questions/70454127/image-jumps-during-page-load-object-fit-cover)
              is momentarily stretch image for a half second after load so i'm cache busting it to avoid that jank
-             TODO: change priority to only be first ~5 bookmarks on page
+             TODO: change priority to only be first ~5 bookmarks on page 
+             (doesnt seem to be happening now and it's annoying to refetch every
+             time you switch between favorites and home, so i removed it for now -> ?${new Date().getTime()})
           */}
+
           <Image
             className="object-contain"
-            src={`${meta?.image}?${new Date().getTime()}`}
+            src={`${meta?.image ?? "/Bookmark-dynamic-gradient.png"}`}
             alt="bookmark site image"
             fill
             priority

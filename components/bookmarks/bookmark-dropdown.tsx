@@ -19,11 +19,11 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Bookmark } from "./card";
 
 interface Props {
-  bookmarkId: number;
+  bookmark: Bookmark;
   tags: Tag[];
 }
 
-export function BookmarkDropdown({ bookmarkId, tags }: Props) {
+export function BookmarkDropdown({ bookmark, tags }: Props) {
   const { onOpen } = useModalStore();
   const queryClient = useQueryClient();
   const { mutate: deleteMutation, isPending: deleteIsPending } = useMutation({
@@ -57,13 +57,13 @@ export function BookmarkDropdown({ bookmarkId, tags }: Props) {
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={() =>
-            onOpen(ModalTypes.AddTag, { id: bookmarkId, tags: tags })
+            onOpen(ModalTypes.AddTag, { bookmark: bookmark, tags: tags })
           }
         >
           Add tag
         </DropdownMenuItem>
         <DropdownMenuItem>Favorite</DropdownMenuItem>
-        <DropdownMenuItem onClick={() => deleteMutation(bookmarkId)}>
+        <DropdownMenuItem onClick={() => deleteMutation(bookmark.id)}>
           Delete
         </DropdownMenuItem>
       </DropdownMenuContent>

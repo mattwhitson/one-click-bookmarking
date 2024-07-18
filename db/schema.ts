@@ -95,10 +95,10 @@ export const tagsRelations = relations(tags, ({ one, many }) => ({
 export const bookmarksToTags = pgTable("bookmarks_to_tags", {
   bookmarkId: integer("bookmark_id")
     .notNull()
-    .references(() => bookmarks.id),
+    .references(() => bookmarks.id, { onDelete: "cascade" }),
   tagId: integer("tag_id")
     .notNull()
-    .references(() => tags.id),
+    .references(() => tags.id, { onDelete: "cascade" }),
 });
 
 export const bookmarksToTagsRelations = relations(
