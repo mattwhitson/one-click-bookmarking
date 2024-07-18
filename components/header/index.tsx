@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 export async function Header() {
   const session = await auth();
   return (
-    <header className="mx-auto w-full border-b-[1px] dark:border-zinc-900">
+    <header className="mx-auto w-full border-b-[1px] dark:border-zinc-900 fixed backdrop-blur-xl z-20">
       <div className="mx-auto w-auto max-w-4xl flex items-center  px-4 py-2">
         {session && (
           <Button variant="ghost" className="sm:hidden h-12 w-12 p-0 mr-auto">

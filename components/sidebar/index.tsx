@@ -8,9 +8,11 @@ import { ModalTypes, useModalStore } from "@/hooks/modal-store";
 export function Sidebar() {
   const { onOpen } = useModalStore();
   return (
-    <nav className="hidden sm:flex flex-col rounded-sm min-w-20 items-center gap-y-6 pb-6 py-1">
+    <nav className="hidden sm:flex flex-col rounded-sm min-w-20 items-center gap-y-6 pb-6 py-1 fixed mt-20">
       <Button variant="ghost" className="h-12 w-12 p-0">
-        <HomeIcon className="w-8 h-8" />
+        <Link href="/bookmarks">
+          <HomeIcon className="w-8 h-8" />
+        </Link>
       </Button>
       <Button
         variant="ghost"

@@ -56,9 +56,10 @@ export function AddTagModal() {
       toast(message);
       onClose();
     } else {
+      console.log("hi");
       const error = await res.json();
       console.log(error);
-      toast("Something went wrong.");
+      toast(error.error);
     }
   };
 

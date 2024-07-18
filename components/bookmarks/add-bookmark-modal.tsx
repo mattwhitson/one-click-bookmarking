@@ -26,10 +26,11 @@ import { Button } from "@/components/ui/button";
 import { ModalTypes, useModalStore } from "@/hooks/modal-store";
 import { client } from "@/lib/hono";
 import { newBookmarkSchema } from "@/lib/zod-schemas";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export function AddBookmarkModal() {
   const { type, isOpen, onClose } = useModalStore();
-
+  const queryClient = useQueryClient();
   const isModalOpen = isOpen && type === ModalTypes.AddBookmark;
 
   const form = useForm<z.infer<typeof newBookmarkSchema>>({
@@ -39,16 +40,25 @@ export function AddBookmarkModal() {
     },
   });
 
+  const { mutate } = useMutation({
+    mutationFn: async (values: z.infer<typeof newBookmarkSchema>) => {
+      const res = await client.api.bookmarks.$post({ json: { ...values } });
+      if (res.ok) {
+        const { message } = await res.json();
+        toast(message);
+      } else {
+        const error = await res.json();
+        console.log(error);
+        toast("Something went wrong.");
+      }
+    },
+    onSuccess(data) {
+      queryClient.invalidateQueries({ queryKey: ["bookmarks"] });
+    },
+  });
+
   const onSubmit = async (values: z.infer<typeof newBookmarkSchema>) => {
-    const res = await client.api.bookmarks.$post({ json: { ...values } });
-    if (res.ok) {
-      const { message } = await res.json();
-      toast(message);
-    } else {
-      const error = await res.json();
-      console.log(error);
-      toast("Something went wrong.");
-    }
+    mutate(values);
     onClose();
   };
 

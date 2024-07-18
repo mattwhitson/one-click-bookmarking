@@ -105,6 +105,42 @@ const app = new Hono()
     }
 
     return c.json({ message: "Successfully created bookmark" }, 200);
-  });
+  })
+  .patch(
+    "/:id",
+    validator("json", (value, c) => {
+      const favorite = value["favorite"];
+      if (typeof favorite !== "boolean") {
+        throw new HTTPException(404, { message: "Body missing." });
+      }
+
+      return {
+        favorite,
+      };
+    }),
+    async (c) => {
+      const session = await auth();
+
+      if (!session || !session.user || !session.user.id) {
+        throw new HTTPException(401, { message: "Unauthorized" });
+      }
+      const userId = session.user.id;
+
+      const id = c.req.param("id");
+      const { favorite } = c.req.valid("json");
+      let updatedBookmark;
+      try {
+        updatedBookmark = await db
+          .update(bookmarks)
+          .set({ favorite })
+          .where(eq(bookmarks.id, Number(id)))
+          .returning();
+      } catch (error) {
+        console.log(error);
+        throw new HTTPException(500, { message: "Database Error" });
+      }
+      return c.json({ data: updatedBookmark[0] });
+    }
+  );
 
 export default app;

@@ -1,13 +1,12 @@
+import { auth } from "@/auth";
+import { Bookmarks } from "@/components/bookmarks";
+import { client } from "@/lib/hono";
 import {
   dehydrate,
   HydrationBoundary,
   QueryClient,
 } from "@tanstack/react-query";
-
-import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { client } from "@/lib/hono";
-import { Bookmarks } from "@/components/bookmarks/index";
 
 async function getBookmarks() {
   const session = await auth();
@@ -24,7 +23,7 @@ async function getBookmarks() {
   return bookmarks;
 }
 
-export default async function BookmarksPage() {
+export default async function Favorites() {
   const queryClient = new QueryClient();
 
   await queryClient.prefetchQuery({
@@ -33,9 +32,9 @@ export default async function BookmarksPage() {
   });
 
   return (
-    <main className="w-full min-h-full border-l-[1px] dark:border-zinc-900 mt-16 sm:ml-20">
+    <main className="w-full min-h-full border-l-[1px] dark:border-zinc-900 sm:ml-20 mt-16">
       <HydrationBoundary state={dehydrate(queryClient)}>
-        <Bookmarks favorites={false} />
+        <Bookmarks favorites />
       </HydrationBoundary>
     </main>
   );

@@ -2,18 +2,17 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { parse } from "node-html-parser";
 import { FiDisc, FiTag } from "react-icons/fi";
 import { BsStar, BsStarFill } from "react-icons/bs";
 import { BookmarkDropdown } from "@/components/bookmarks/bookmark-dropdown";
 import { Tag } from "@/app/api/[[...route]]/bookmarks";
 import { Button } from "../ui/button";
-import {
-  cleanUpUrl,
-  GetMetaInfoTest,
-  Metadata,
-} from "@/hooks/use-get-meta-info";
-import { useEffect, useState } from "react";
+
+import { useGetMetaInfo } from "@/hooks/use-get-meta-info";
+import { cleanUpUrl } from "@/lib/utils";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { client } from "@/lib/hono";
+import { toast } from "sonner";
 
 interface Props {
   id: number;
@@ -22,16 +21,40 @@ interface Props {
   tags: Tag[];
 }
 
-export function Card({ id, url, favorite, tags }: Props) {
-  const [meta, setMeta] = useState<Metadata>();
+interface Bookmark {
+  id: number;
+  url: string;
+  favorite: boolean;
+  createdAt: string | null;
+  userId: string;
+}
 
-  useEffect(() => {
-    const handleFetch = async (url: string) => {
-      const meta = await GetMetaInfoTest(url);
-      return meta;
-    };
-    handleFetch(url).then((data) => setMeta(data));
-  }, [url]);
+export function Card({ id, url, favorite, tags }: Props) {
+  const { data: meta } = useGetMetaInfo(url);
+  const queryClient = useQueryClient();
+
+  const { mutate: favoriteMutate, isPending: isFavoritePending } = useMutation({
+    mutationFn: async (value: boolean) => {
+      const res = await client.api.bookmarks[":id"].$patch({
+        json: { favorite: value },
+        param: { id: String(id) },
+      });
+      if (res && !res.ok) {
+        const error = await res.json();
+        toast("Something went wrong...");
+      }
+      const { data } = await res.json();
+      return data;
+    },
+    onSuccess: (data) => {
+      console.log(data);
+      queryClient.setQueryData(["bookmarks"], (prev: Bookmark[]) =>
+        prev?.map((post) =>
+          post.id === data.id ? { ...post, favorite: data.favorite } : post
+        )
+      );
+    },
+  });
 
   if (!meta) return null;
   return (
@@ -41,7 +64,7 @@ export function Card({ id, url, favorite, tags }: Props) {
           <p className="text-center pt-[0.1rem] text-xs pl-3 sm:text-sm sm:text-end pr-3 sm:pr-4">
             Today
           </p>
-          <FiDisc className="w-4 h-4 absolute top-1 right-[-0.5rem] bg-background" />
+          <FiDisc className="w-4 h-4 absolute top-1 right-[-0.5rem] bg-background rounded-full" />
         </div>
       </article>
       <article className="flex flex-col gap-y-4 px-4 mt-2 py-4 w-full">
@@ -72,14 +95,24 @@ export function Card({ id, url, favorite, tags }: Props) {
           <p className="absolute bottom-0 left-0 text-sm backdrop-blur-3xl p-1 m-1 rounded-md bg-transparent">
             {cleanUpUrl(url)}
           </p>
-          <Button className="ml-auto p-0 bg-background text-primary hover:bg-background block absolute bottom-2 right-2">
-            <BsStar className="h-6 w-6 text-yellow-500" />
+          <Button
+            className="ml-auto p-2 bg-transparent text-primary hover:bg-transparent block absolute bottom-2 right-2 z-10"
+            onClick={() => favoriteMutate(!favorite)}
+            disabled={isFavoritePending}
+            onClickCapture={(e) => e.preventDefault()}
+          >
+            {!favorite ? (
+              <BsStar className="h-6 w-6 text-yellow-500" />
+            ) : (
+              <BsStarFill className="h-6 w-6 text-yellow-500" />
+            )}
           </Button>
         </Link>
         <div className="flex flex-row gap-x-4 items-center">
           <FiTag className="min-h-6 min-w-6 text-cyan-500" />
           <div className="flex gap-x-4 flex-wrap gap-y-4">
-            {tags[0].id !== null &&
+            {tags &&
+              tags[0].id !== null &&
               tags.map(({ id, tag }) => (
                 <p
                   key={id}

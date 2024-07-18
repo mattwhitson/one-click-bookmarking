@@ -21,11 +21,9 @@ const protectedRoutes = ["/api", "/bookmarks"];
 
 export default async function middleware(request: NextRequest) {
   const session = await auth();
-
   const isUnprotectedRoute = unprotectedRoutes.some((prefix) =>
     request.nextUrl.pathname.startsWith(prefix)
   );
-
   if (isUnprotectedRoute || request.nextUrl.pathname === "/") {
     if (
       session &&
@@ -37,15 +35,12 @@ export default async function middleware(request: NextRequest) {
     }
     return NextResponse.next();
   }
-
   const isProtectedRoute = protectedRoutes.some((prefix) =>
     request.nextUrl.pathname.startsWith(prefix)
   );
-
   if (!session && isProtectedRoute) {
     const absoluteURL = new URL("/login", request.nextUrl.origin);
     return NextResponse.redirect(absoluteURL.toString());
   }
-
   return NextResponse.next();
 }

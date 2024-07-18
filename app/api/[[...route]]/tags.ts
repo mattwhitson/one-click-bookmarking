@@ -69,6 +69,20 @@ const app = new Hono()
       const userId = session.user.id;
 
       // TODO: Make sure that an identical tag doesn't already exist for this user before adding new one to database
+      let alreadyExists;
+      try {
+        alreadyExists = await db
+          .select({ count: count() })
+          .from(tags)
+          .where(eq(tags.tag, tag));
+      } catch (error) {
+        console.log(error);
+        throw new HTTPException(500, { message: "Database Error" });
+      }
+
+      if (alreadyExists[0].count > 0) {
+        return c.json({ error: "Tag already exists!" }, 409);
+      }
 
       try {
         // TODO: maybe try using neon with websockets later because then we could make this a transaction instaed of two seperate db insertions.
