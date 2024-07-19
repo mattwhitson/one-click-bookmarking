@@ -48,12 +48,10 @@ export function BookmarkDropdown({ bookmark, tags }: Props) {
         (prev: InfiniteQueryBookmarks) => {
           const result = prev?.pages.map((page) => ({
             ...page,
-            bookmarks: page.bookmarks.filter((post) => {
-              return post.id !== bookmarkId;
-            }),
-            metadata: page.metadata.filter((post) => {
-              return post.bookmarkId !== bookmarkId;
-            }),
+            bookmarks: page.bookmarks.filter((post) => post.id !== bookmarkId),
+            metadata: page.metadata.filter(
+              (post) => post.bookmarkId !== bookmarkId
+            ),
           }));
           return { ...prev, pages: result };
         }
@@ -71,9 +69,7 @@ export function BookmarkDropdown({ bookmark, tags }: Props) {
         <DropdownMenuLabel>Options</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          onClick={() =>
-            onOpen(ModalTypes.AddTag, { bookmark: bookmark, tags: tags })
-          }
+          onClick={() => onOpen(ModalTypes.AddTag, { bookmark: bookmark })} // get rid of this, we can use useQuery hook
         >
           Add tag
         </DropdownMenuItem>

@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { db } from "./db";
+import { HTTPException } from "hono/http-exception";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: DrizzleAdapter(db),
@@ -13,7 +14,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   ],
   callbacks: {
     session: async ({ session, user, token }) => {
-      console.log(user, token);
       if (session?.user) {
         session.user.id = user.id;
       }
@@ -22,3 +22,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
   events: {},
 });
+
+export async function authenticateUser() {
+  const session = await auth();
+
+  if (!session || !session.user || !session.user.id) {
+    throw new HTTPException(401, { message: "Unauthorized" });
+  }
+
+  const userId = session.user.id;
+  return userId;
+}

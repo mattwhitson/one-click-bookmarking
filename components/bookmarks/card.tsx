@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { FiDisc, FiTag } from "react-icons/fi";
 import { BsStar, BsStarFill } from "react-icons/bs";
+import { format } from "date-fns";
 import { BookmarkDropdown } from "@/components/bookmarks/bookmark-dropdown";
 import { Metadata, Tag } from "@/app/api/[[...route]]/bookmarks";
 import { Button } from "../ui/button";
@@ -53,19 +54,17 @@ export function Card({ bookmark, allTags, metadata }: Props) {
       console.log(data);
       queryClient.setQueryData(
         ["userBookmarks"],
-        (prev: InfiniteQueryBookmarks) => {
-          const temp: InfiniteQueryBookmarks = structuredClone(prev);
-          const result = temp.pages.map((page) =>
-            page.bookmarks.map((post) =>
-              post.id === data.id ? { ...post, favorite: !post.favorite } : post
-            )
-          );
-          const finalResult = temp.pages.map((page, index) => ({
+        (prev: InfiniteQueryBookmarks) => ({
+          ...prev,
+          pages: prev.pages.map((page) => ({
             ...page,
-            bookmarks: result[index],
-          }));
-          return { ...temp, pages: finalResult };
-        }
+            bookmarks: page.bookmarks.map((bookmark) =>
+              bookmark.id === data.id
+                ? { ...bookmark, favorite: data.favorite }
+                : { ...bookmark }
+            ),
+          })),
+        })
       );
     },
   });
@@ -75,7 +74,7 @@ export function Card({ bookmark, allTags, metadata }: Props) {
       <article className="sm:min-w-[25%] min-h-full border-r-[1px] dark:border-zinc-900 flex flex-col py-4">
         <div className="mt-[0.65rem] relative">
           <p className="text-center pt-[0.1rem] text-xs pl-3 sm:text-sm sm:text-end pr-3 sm:pr-4">
-            Today
+            {format(bookmark.createdAt!, "do 'of' MMMM yyyy")}
           </p>
           <FiDisc className="w-4 h-4 absolute top-1 right-[-0.5rem] bg-background rounded-full" />
         </div>

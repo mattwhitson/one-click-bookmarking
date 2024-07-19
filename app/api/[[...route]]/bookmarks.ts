@@ -7,7 +7,7 @@ import { cleanUpUrl } from "@/lib/utils";
 import { db } from "@/db";
 import { bookmarks, bookmarksToTags, tags } from "@/db/schema";
 import { newBookmarkSchema } from "@/lib/zod-schemas";
-import { auth } from "@/auth";
+import { auth, authenticateUser } from "@/auth";
 import { and, asc, count, desc, eq, lt, or, sql } from "drizzle-orm";
 
 export interface Tag {
@@ -38,19 +38,13 @@ const app = new Hono()
     "/",
     validator("query", (value, c) => {
       const cursor = value["cursor"];
-      console.log(cursor);
 
       return {
         cursor,
       };
     }),
     async (c) => {
-      const session = await auth();
-
-      if (!session || !session.user || !session.user.id) {
-        throw new HTTPException(401, { message: "Unauthorized" });
-      }
-      const userId = session.user.id;
+      const userId = await authenticateUser();
       const cursor = Number(c.req.query("cursor"));
       try {
         // TODO: Sort by created at to get newest on top when we update schema
@@ -110,11 +104,9 @@ const app = new Hono()
 
   .post("/", zValidator("json", newBookmarkSchema), async (c) => {
     let { url } = c.req.valid("json");
-    const session = await auth();
 
-    if (!session || !session.user || !session.user.id) {
-      throw new HTTPException(401, { message: "Unauthorized" });
-    }
+    const userId = await authenticateUser();
+
     if (!url) {
       throw new HTTPException(400, { message: "Missing url" });
     }
@@ -151,7 +143,7 @@ const app = new Hono()
         .values({
           url,
           favorite: false,
-          userId: session.user.id,
+          userId: userId,
         })
         .returning();
 
@@ -177,12 +169,7 @@ const app = new Hono()
       };
     }),
     async (c) => {
-      const session = await auth();
-
-      if (!session || !session.user || !session.user.id) {
-        throw new HTTPException(401, { message: "Unauthorized" });
-      }
-      const userId = session.user.id;
+      const userId = await authenticateUser();
 
       const id = c.req.param("id");
       const { favorite } = c.req.valid("json");
@@ -217,11 +204,7 @@ const app = new Hono()
     }),
     async (c) => {
       const bookmarkId = c.req.param("bookmarkId");
-      const session = await auth();
-
-      if (!session || !session.user || !session.user.id) {
-        throw new HTTPException(401, { message: "Unauthorized" });
-      }
+      await authenticateUser();
 
       try {
         await db.delete(bookmarks).where(eq(bookmarks.id, Number(bookmarkId)));
@@ -258,7 +241,6 @@ export async function getMetadata(url: string) {
       },
       signal: AbortSignal.timeout(2000),
     });
-    console.log(url);
     const html = await res.text();
     const parsedHtml = parse(html);
 
@@ -283,12 +265,14 @@ export async function getMetadata(url: string) {
 
     meta.title = data["og:title"] || data["og:description"] || cleanUpUrl(url);
     meta.description = data["og:description"];
-    meta.image = data["og:image"] || data["twitter:image"] || meta.image;
+    meta.image = data["og:image"] || data["twitter:image"];
 
     if (!meta.image && (data["icon"] || data["apple-touch-icon"])) {
       const pathname = data["icon"] || data["apple-touch-icon"];
       const { protocol, hostname } = new URL(url);
       meta.image = `${protocol}//${hostname}${pathname}`;
+    } else if (!meta.image) {
+      meta.image = "/Bookmark-dynamic-gradient.png";
     }
   } catch (error) {
     console.log(error);

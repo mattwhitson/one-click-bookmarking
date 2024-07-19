@@ -6,31 +6,42 @@ import {
   HydrationBoundary,
   QueryClient,
 } from "@tanstack/react-query";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
-async function getBookmarks({ pageParam = 0 }) {
-  const session = await auth();
-  if (!session || !session.user?.id) redirect("/login");
+async function getBookmarks({ pageParam = undefined }) {
+  const cookie: Record<string, string> = {
+    Cookie: headers().get("Cookie")!,
+  };
 
-  const response = await client.api.bookmarks.$get({
-    query: { cursor: "undefined" },
-  });
+  const response = await client.api.bookmarks.$get(
+    {
+      query: { cursor: "undefined" },
+    },
+    { headers: cookie }
+  );
 
   if (!response.ok) {
     throw new Error("Failed to fetch your bookmarks!");
   }
 
-  const { bookmarks, cursor } = await response.json();
-  return { bookmarks, cursor };
+  const { bookmarks, cursor, metadata } = await response.json();
+  return { bookmarks, cursor, metadata };
 }
 
-async function getTags() {
-  const session = await auth();
-  if (!session || !session.user?.id) redirect("/login");
+async function getTags(params: { queryKey: string[] }) {
+  const [_, userId] = params.queryKey;
+  const cookie: Record<string, string> = {
+    Cookie: headers().get("Cookie")!,
+  };
 
-  const response = await client.api.tags.$get({
-    query: { userId: session.user?.id },
-  });
+  const response = await client.api.tags.$get(
+    {
+      query: { userId: userId },
+    },
+    { headers: cookie }
+  );
+
   if (!response.ok) {
     throw new Error("Failed to fetch your bookmarks!");
   }
@@ -40,7 +51,11 @@ async function getTags() {
 }
 
 export default async function Favorites() {
+  const session = await auth();
+  if (!session || !session.user?.id) redirect("/login");
   const queryClient = new QueryClient();
+
+  const userId = session.user.id;
 
   await queryClient.prefetchInfiniteQuery({
     queryKey: ["userBookmarks"],
@@ -49,7 +64,7 @@ export default async function Favorites() {
   });
 
   await queryClient.prefetchQuery({
-    queryKey: ["tags"],
+    queryKey: ["tags", userId],
     queryFn: getTags,
   });
 

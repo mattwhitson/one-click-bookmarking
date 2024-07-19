@@ -63,17 +63,18 @@ export function AddBookmarkModal() {
         const metadata = { ...data.metadata };
         queryClient.setQueryData(
           ["userBookmarks"],
-          (prev: InfiniteQueryBookmarks) => {
-            console.log("WTF");
-            const copy: InfiniteQueryBookmarks = JSON.parse(
-              // cloning was being a mofo so I decided to go with the simpler approach!!! *(probably should change later)
-              JSON.stringify(prev)
-            );
-            copy.pages[0].bookmarks.unshift(bookmark);
-            copy.pages[0].metadata.unshift(metadata);
-            const result = copy;
-            return result;
-          }
+          (prev: InfiniteQueryBookmarks) => ({
+            ...prev,
+            pages: prev.pages.map((page, index) =>
+              index === 0
+                ? {
+                    ...page,
+                    bookmarks: [bookmark, ...page.bookmarks],
+                    metadata: [metadata, ...page.metadata],
+                  }
+                : { ...page }
+            ),
+          })
         );
       }
     },

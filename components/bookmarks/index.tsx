@@ -5,7 +5,11 @@ import { Bookmark, Card } from "@/components/bookmarks/card";
 import { useGetBookmarks } from "@/hooks/use-get-bookmarks";
 import { useGetTags } from "@/hooks/use-get-tags";
 import { Fragment, useEffect, useRef } from "react";
-import { InfiniteData } from "@tanstack/react-query";
+import {
+  InfiniteData,
+  QueryClient,
+  useQueryClient,
+} from "@tanstack/react-query";
 
 interface Props {
   favorites: boolean;
@@ -37,11 +41,11 @@ export type InfiniteQueryBookmarks = InfiniteData<
 export function Bookmarks({ favorites }: Props) {
   const ref = useRef<HTMLDivElement | null>(null);
   const { data: session } = useSession();
+  const queryClient = useQueryClient();
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status } =
     useGetBookmarks();
 
-  console.log(session);
   const allTags = useGetTags(session?.user?.id);
 
   useEffect(() => {
@@ -67,7 +71,7 @@ export function Bookmarks({ favorites }: Props) {
   if (data === undefined && status !== "success") {
     return <Loader2 className="animate-spin mx-auto mt-16 w-12 h-12" />;
   }
-  console.log(allTags);
+
   return (
     <>
       {data?.pages.map((page, index) => (
@@ -78,6 +82,8 @@ export function Bookmarks({ favorites }: Props) {
               bookmark={bookmark}
               allTags={allTags.data}
               metadata={page.metadata[j]}
+              // TODO: figure out how to whether post is in same day or not so we only display the date when the bookmark
+              //       is from an earlier day
             />
           ))}
         </Fragment>

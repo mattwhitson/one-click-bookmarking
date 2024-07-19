@@ -9,7 +9,6 @@ export enum ModalTypes {
 
 export type BookmarkData = {
   bookmark: Bookmark;
-  tags: Tag[];
 };
 
 interface ModalState {

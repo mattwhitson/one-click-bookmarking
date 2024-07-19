@@ -1,13 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { client } from "@/lib/hono";
 
-export function useGetTags(userId?: string) {
+export function useGetTags(userId: any) {
   const query = useQuery({
     queryKey: ["tags", userId],
     queryFn: async (params) => {
       const [_, userId] = params.queryKey;
       if (userId === undefined) return [];
-      console.log("hey");
+
       const response = await client.api.tags.$get({ query: { userId } });
 
       if (!response.ok) {
@@ -18,6 +18,7 @@ export function useGetTags(userId?: string) {
 
       return tags;
     },
+    enabled: userId !== undefined,
   });
 
   return query;
