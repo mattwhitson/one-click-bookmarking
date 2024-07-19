@@ -9,19 +9,20 @@ import { redirect } from "next/navigation";
 import { client } from "@/lib/hono";
 import { Bookmarks } from "@/components/bookmarks/index";
 
-async function getBookmarks() {
+async function getBookmarks({ pageParam = 0 }) {
   const session = await auth();
   if (!session || !session.user?.id) redirect("/login");
 
-  const response = await client.api.bookmarks.$get();
+  const response = await client.api.bookmarks.$get({
+    query: { cursor: "undefined" },
+  });
 
   if (!response.ok) {
     throw new Error("Failed to fetch your bookmarks!");
   }
 
-  const { bookmarks } = await response.json();
-
-  return bookmarks;
+  const { bookmarks, cursor } = await response.json();
+  return { bookmarks, cursor };
 }
 
 async function getTags() {
@@ -43,9 +44,10 @@ async function getTags() {
 export default async function BookmarksPage() {
   const queryClient = new QueryClient();
 
-  await queryClient.prefetchQuery({
-    queryKey: ["bookmarks"],
+  await queryClient.prefetchInfiniteQuery({
+    queryKey: ["userBookmarks"],
     queryFn: getBookmarks,
+    initialPageParam: undefined,
   });
 
   await queryClient.prefetchQuery({

@@ -21,20 +21,21 @@ export interface Metadata {
   image: string;
   description: string;
 }
-
+//TODO: Move to api route because server actions aren't concurrent for some reason
 export async function getMetadata(url: string) {
   const meta = {} as Metadata;
   const data: { [key: MetaTagTypes[number]]: string } = {};
   try {
+    console.log("b4 fetch");
     const res = await fetch(url, {
       headers: {
         "User-Agent": "mattwhitson.dev Bot",
       },
     });
-
+    console.log("b4 res.text()");
     const html = await res.text();
     const parsedHtml = parse(html);
-
+    console.log("made it herer");
     parsedHtml.querySelectorAll("meta").forEach(({ attributes }) => {
       const property =
         attributes.property ||
@@ -66,7 +67,8 @@ export async function getMetadata(url: string) {
       meta.image = "/Bookmark-dynamic-gradient.png";
     }
   } catch (error) {
-    throw new Error("Failed to fetch your bookmarks!");
+    console.log(error);
+    return {};
   }
   return meta;
 }

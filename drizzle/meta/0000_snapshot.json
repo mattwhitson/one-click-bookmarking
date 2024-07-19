@@ -1,5 +1,5 @@
 {
-  "id": "db257b31-beca-4cca-b2e1-9bc1ecb865ac",
+  "id": "46d5737e-3ef5-4509-bfc7-931c1c58bbd5",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -182,7 +182,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -315,7 +315,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },

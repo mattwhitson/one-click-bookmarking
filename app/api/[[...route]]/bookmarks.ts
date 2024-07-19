@@ -2,11 +2,13 @@ import { Hono } from "hono";
 import { validator } from "hono/validator";
 import { HTTPException } from "hono/http-exception";
 import { zValidator } from "@hono/zod-validator";
+import { parse } from "node-html-parser";
+import { cleanUpUrl } from "@/lib/utils";
 import { db } from "@/db";
 import { bookmarks, bookmarksToTags, tags } from "@/db/schema";
 import { newBookmarkSchema } from "@/lib/zod-schemas";
 import { auth } from "@/auth";
-import { and, asc, count, desc, eq, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, lt, or, sql } from "drizzle-orm";
 
 export interface Tag {
   id: number;
@@ -20,45 +22,91 @@ export interface BookmarksWithTags {
   tags: Tag[];
 }
 
+type MetaTagTypes = (typeof metaTags)[number];
+
+export interface Metadata {
+  title: string;
+  image: string;
+  description: string;
+  bookmarkId: number;
+}
+
+const BOOKMARK_BATCH_SIZE = 5;
+
 const app = new Hono()
-  .get("/", async (c) => {
-    const session = await auth();
+  .get(
+    "/",
+    validator("query", (value, c) => {
+      const cursor = value["cursor"];
+      console.log(cursor);
 
-    if (!session || !session.user || !session.user.id) {
-      throw new HTTPException(401, { message: "Unauthorized" });
-    }
-    const userId = session.user.id;
+      return {
+        cursor,
+      };
+    }),
+    async (c) => {
+      const session = await auth();
 
-    try {
-      // TODO: Sort by created at to get newest on top when we update schema
-      const data: BookmarksWithTags[] = await db
-        .select({
-          id: bookmarks.id,
-          url: bookmarks.url,
-          favorite: bookmarks.favorite,
-          createdAt: bookmarks.createdAt,
-          tags: sql<
-            Tag[]
-          >`json_agg(json_build_object('id', ${tags.id}, 'tag', ${tags.tag}))`,
-        })
-        .from(bookmarks)
-        .leftJoin(bookmarksToTags, eq(bookmarks.id, bookmarksToTags.bookmarkId))
-        .leftJoin(tags, eq(tags.id, bookmarksToTags.tagId))
-        .where(eq(bookmarks.userId, userId))
-        .groupBy(bookmarks.id);
-
-      for (const bookmark of data) {
-        if (bookmark.tags[0].id === null) bookmark.tags = [];
+      if (!session || !session.user || !session.user.id) {
+        throw new HTTPException(401, { message: "Unauthorized" });
       }
+      const userId = session.user.id;
+      const cursor = Number(c.req.query("cursor"));
+      try {
+        // TODO: Sort by created at to get newest on top when we update schema
+        const data: BookmarksWithTags[] = await db
+          .select({
+            id: bookmarks.id,
+            url: bookmarks.url,
+            favorite: bookmarks.favorite,
+            createdAt: bookmarks.createdAt,
+            tags: sql<
+              Tag[]
+            >`json_agg(json_build_object('id', ${tags.id}, 'tag', ${tags.tag}))`,
+          })
+          .from(bookmarks)
+          .leftJoin(
+            bookmarksToTags,
+            eq(bookmarks.id, bookmarksToTags.bookmarkId)
+          )
+          .leftJoin(tags, eq(tags.id, bookmarksToTags.tagId))
+          .where(
+            and(
+              eq(bookmarks.userId, userId),
+              cursor ? lt(bookmarks.id, cursor) : undefined
+            )
+          )
+          .limit(BOOKMARK_BATCH_SIZE)
+          .groupBy(bookmarks.id)
+          .orderBy(desc(bookmarks.createdAt));
 
-      return c.json({
-        bookmarks: data,
-      });
-    } catch (error) {
-      console.log(error);
-      throw new HTTPException(500, { message: "Database Error" });
+        for (const bookmark of data) {
+          if (bookmark.tags[0].id === null) bookmark.tags = [];
+        }
+
+        let nextCursor = undefined;
+        if (data.length === BOOKMARK_BATCH_SIZE) {
+          nextCursor = data[BOOKMARK_BATCH_SIZE - 1].id;
+        }
+
+        let metadata: Metadata[] = [];
+        for (const bookmark of data) {
+          const meta = await getMetadata(bookmark.url);
+          metadata.push(meta);
+          metadata[metadata.length - 1].bookmarkId = bookmark.id;
+        }
+
+        return c.json({
+          bookmarks: data,
+          cursor: nextCursor,
+          metadata,
+        });
+      } catch (error) {
+        console.log(error);
+        throw new HTTPException(500, { message: "Database Error" });
+      }
     }
-  })
+  )
 
   .post("/", zValidator("json", newBookmarkSchema), async (c) => {
     let { url } = c.req.valid("json");
@@ -94,21 +142,27 @@ const app = new Hono()
       .where(or(eq(bookmarks.url, copy), eq(bookmarks.url, url)));
 
     if (result[0].count > 0) {
-      return c.json({ message: "Bookmark already exists!" }, 200);
+      return c.json({ message: "Bookmark already exists!" }, 409);
     }
 
     try {
-      await db.insert(bookmarks).values({
-        url,
-        favorite: false,
-        userId: session.user.id,
-      });
+      const bookmark = await db
+        .insert(bookmarks)
+        .values({
+          url,
+          favorite: false,
+          userId: session.user.id,
+        })
+        .returning();
+
+      const metadata: Metadata = await getMetadata(bookmark[0].url);
+      metadata.bookmarkId = bookmark[0].id;
+
+      return c.json({ bookmark: bookmark[0], metadata }, 200);
     } catch (error) {
       console.log(error);
       throw new HTTPException(500, { message: "Database Error" });
     }
-
-    return c.json({ message: "Successfully created bookmark" }, 200);
   })
   .patch(
     "/:id",
@@ -178,5 +232,68 @@ const app = new Hono()
       }
     }
   );
+
+const metaTags = [
+  "og:image",
+  "og:title",
+  "og:description",
+  "twitter:image",
+  "og:site_name",
+  "icon",
+  "apple-touch-icon",
+  "image",
+] as const;
+
+export async function getMetadata(url: string) {
+  const meta = {
+    title: url,
+    description: "",
+    image: "/Bookmark-dynamic-gradient.png",
+  } as Metadata;
+  const data: { [key: MetaTagTypes[number]]: string } = {};
+  try {
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent": "mattwhitson.dev Bot",
+      },
+      signal: AbortSignal.timeout(2000),
+    });
+    console.log(url);
+    const html = await res.text();
+    const parsedHtml = parse(html);
+
+    parsedHtml.querySelectorAll("meta").forEach(({ attributes }) => {
+      const property =
+        attributes.property ||
+        attributes.name ||
+        attributes.href ||
+        attributes.itemprop;
+      if (metaTags.includes(property as MetaTagTypes) && !data[property]) {
+        data[property] = attributes.content;
+      }
+    });
+
+    parsedHtml.querySelectorAll("link").forEach(({ attributes }) => {
+      const property = attributes.rel;
+
+      if (metaTags.includes(property as MetaTagTypes) && !data[property]) {
+        data[property] = attributes.href || attributes.content;
+      }
+    });
+
+    meta.title = data["og:title"] || data["og:description"] || cleanUpUrl(url);
+    meta.description = data["og:description"];
+    meta.image = data["og:image"] || data["twitter:image"] || meta.image;
+
+    if (!meta.image && (data["icon"] || data["apple-touch-icon"])) {
+      const pathname = data["icon"] || data["apple-touch-icon"];
+      const { protocol, hostname } = new URL(url);
+      meta.image = `${protocol}//${hostname}${pathname}`;
+    }
+  } catch (error) {
+    console.log(error);
+  }
+  return meta;
+}
 
 export default app;

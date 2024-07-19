@@ -8,7 +8,9 @@ export async function getBookmarks() {
   const session = await auth();
   if (!session || !session.user?.id) redirect("/login");
 
-  const bookmarks = await client.api.bookmarks.$get();
+  const bookmarks = await client.api.bookmarks.$get({
+    param: { cursor: undefined },
+  });
 
   return bookmarks;
 }

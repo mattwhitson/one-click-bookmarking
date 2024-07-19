@@ -13,7 +13,7 @@
 //   posts: many(bookmarkTable),
 // }));
 
-// export const bookmarkTable = pgTable("bookmarks", {
+// export const bookmarkTable = pgTable(, {
 //   id: serial("id").primaryKey(),
 //   categories: text("category"),
 //   url: text("url").notNull(),
@@ -64,7 +64,7 @@ export const bookmarks = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
     userId: text("user_id")
       .notNull()
-      .references(() => users.id),
+      .references(() => users.id, { onDelete: "cascade" }),
   },
   (table) => {
     return {
@@ -84,7 +84,7 @@ export const tags = pgTable("tags", {
   tag: text("text").notNull(),
   userId: text("user_id")
     .notNull()
-    .references(() => users.id),
+    .references(() => users.id, { onDelete: "cascade" }),
 });
 
 export const tagsRelations = relations(tags, ({ one, many }) => ({

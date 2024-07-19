@@ -27,6 +27,8 @@ import { ModalTypes, useModalStore } from "@/hooks/modal-store";
 import { client } from "@/lib/hono";
 import { newBookmarkSchema } from "@/lib/zod-schemas";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { InfiniteQueryBookmarks } from ".";
+import { Tag } from "@/app/api/[[...route]]/bookmarks";
 
 export function AddBookmarkModal() {
   const { type, isOpen, onClose } = useModalStore();
@@ -44,16 +46,36 @@ export function AddBookmarkModal() {
     mutationFn: async (values: z.infer<typeof newBookmarkSchema>) => {
       const res = await client.api.bookmarks.$post({ json: { ...values } });
       if (res.ok) {
-        const { message } = await res.json();
-        toast(message);
+        const bookmark = await res.json();
+        toast("Successfully created bookmark!");
+        return bookmark;
       } else {
         const error = await res.json();
         console.log(error);
         toast("Something went wrong.");
       }
     },
+
+    // TODO: should i just requery the result or do this? idk, probably should test it later
     onSuccess(data) {
-      queryClient.invalidateQueries({ queryKey: ["bookmarks"] });
+      if (data !== undefined) {
+        const bookmark = { ...data.bookmark, tags: [] as Tag[] };
+        const metadata = { ...data.metadata };
+        queryClient.setQueryData(
+          ["userBookmarks"],
+          (prev: InfiniteQueryBookmarks) => {
+            console.log("WTF");
+            const copy: InfiniteQueryBookmarks = JSON.parse(
+              // cloning was being a mofo so I decided to go with the simpler approach!!! *(probably should change later)
+              JSON.stringify(prev)
+            );
+            copy.pages[0].bookmarks.unshift(bookmark);
+            copy.pages[0].metadata.unshift(metadata);
+            const result = copy;
+            return result;
+          }
+        );
+      }
     },
   });
 

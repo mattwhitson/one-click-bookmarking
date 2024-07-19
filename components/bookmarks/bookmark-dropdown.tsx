@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { client } from "@/lib/hono";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Bookmark } from "./card";
+import { InfiniteQueryBookmarks } from ".";
 
 interface Props {
   bookmark: Bookmark;
@@ -39,9 +40,23 @@ export function BookmarkDropdown({ bookmark, tags }: Props) {
         toast("Something went wrong.");
       }
     },
+    // this code is particularily confusing, basically react query needs the cursor to be in the page along with
+    // the bookmarks so im spreading the whole page object before filtering the bookmarks
     onSuccess(res, bookmarkId) {
-      queryClient.setQueryData(["bookmarks"], (prev: Bookmark[]) =>
-        prev?.filter((post) => post.id !== bookmarkId)
+      queryClient.setQueryData(
+        ["userBookmarks"], // TODO: change back to bookmarks since the problem has been solved
+        (prev: InfiniteQueryBookmarks) => {
+          const result = prev?.pages.map((page) => ({
+            ...page,
+            bookmarks: page.bookmarks.filter((post) => {
+              return post.id !== bookmarkId;
+            }),
+            metadata: page.metadata.filter((post) => {
+              return post.bookmarkId !== bookmarkId;
+            }),
+          }));
+          return { ...prev, pages: result };
+        }
       );
     },
   });

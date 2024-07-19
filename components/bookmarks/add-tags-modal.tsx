@@ -78,7 +78,7 @@ export function AddTagModal() {
       throw error; // why am i throwing here?
     },
     onSuccess(result, variables) {
-      queryClient.setQueryData(["bookmarks"], (prev: Bookmark[]) =>
+      queryClient.setQueryData(["userBookmarks"], (prev: Bookmark[]) =>
         prev?.map((post) =>
           post.id === variables.bookmarkId
             ? {

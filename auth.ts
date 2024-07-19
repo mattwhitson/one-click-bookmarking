@@ -11,6 +11,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       clientSecret: process.env.GOOGLE_SECRET,
     }),
   ],
-  callbacks: {},
+  callbacks: {
+    session: async ({ session, user, token }) => {
+      console.log(user, token);
+      if (session?.user) {
+        session.user.id = user.id;
+      }
+      return session;
+    },
+  },
   events: {},
 });

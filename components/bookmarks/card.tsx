@@ -5,18 +5,19 @@ import Link from "next/link";
 import { FiDisc, FiTag } from "react-icons/fi";
 import { BsStar, BsStarFill } from "react-icons/bs";
 import { BookmarkDropdown } from "@/components/bookmarks/bookmark-dropdown";
-import { Tag } from "@/app/api/[[...route]]/bookmarks";
+import { Metadata, Tag } from "@/app/api/[[...route]]/bookmarks";
 import { Button } from "../ui/button";
 
-import { useGetMetaInfo } from "@/hooks/use-get-meta-info";
 import { cleanUpUrl } from "@/lib/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { client } from "@/lib/hono";
 import { toast } from "sonner";
+import { InfiniteQueryBookmarks } from ".";
 
 interface Props {
   bookmark: Bookmark;
   allTags: Tag[] | undefined;
+  metadata: Metadata;
 }
 
 export interface Bookmark {
@@ -30,9 +31,8 @@ export interface Bookmark {
 
 //TODO: right now loading sucks, need to probably pull the meta loading up and then wait for all the meta tags to load before rendering the posts
 // otherwise it's too janky becaause they load in like a waterfall downawards, one every 1/4  second or so and it looks awful
-export function Card({ bookmark, allTags }: Props) {
+export function Card({ bookmark, allTags, metadata }: Props) {
   const { id, url, favorite, tags } = bookmark;
-  const { data: meta } = useGetMetaInfo(url);
   const queryClient = useQueryClient();
 
   const { mutate: favoriteMutate, isPending: isFavoritePending } = useMutation({
@@ -51,15 +51,25 @@ export function Card({ bookmark, allTags }: Props) {
     },
     onSuccess: (data) => {
       console.log(data);
-      queryClient.setQueryData(["bookmarks"], (prev: Bookmark[]) =>
-        prev?.map((post) =>
-          post.id === data.id ? { ...post, favorite: data.favorite } : post
-        )
+      queryClient.setQueryData(
+        ["userBookmarks"],
+        (prev: InfiniteQueryBookmarks) => {
+          const temp: InfiniteQueryBookmarks = structuredClone(prev);
+          const result = temp.pages.map((page) =>
+            page.bookmarks.map((post) =>
+              post.id === data.id ? { ...post, favorite: !post.favorite } : post
+            )
+          );
+          const finalResult = temp.pages.map((page, index) => ({
+            ...page,
+            bookmarks: result[index],
+          }));
+          return { ...temp, pages: finalResult };
+        }
       );
     },
   });
 
-  //if (!meta) return null;
   return (
     <div className="flex w-full">
       <article className="sm:min-w-[25%] min-h-full border-r-[1px] dark:border-zinc-900 flex flex-col py-4">
@@ -72,11 +82,11 @@ export function Card({ bookmark, allTags }: Props) {
       </article>
       <article className="flex flex-col gap-y-4 px-4 mt-2 py-4 w-full">
         <div className="flex justify-between items-center">
-          <h3 className="text-xl font-semibold">{meta?.title}</h3>
+          <h3 className="text-xl font-semibold">{metadata.title}</h3>
           <BookmarkDropdown bookmark={bookmark} tags={allTags ?? []} />
         </div>
         <p className="text-sm text-zinc-800 dark:text-zinc-300 line-clamp-3">
-          {meta?.description}
+          {metadata.description}
         </p>
         <Link
           href={url}
@@ -91,7 +101,7 @@ export function Card({ bookmark, allTags }: Props) {
 
           <Image
             className="object-contain"
-            src={`${meta?.image ?? "/Bookmark-dynamic-gradient.png"}`}
+            src={`${metadata.image}`}
             alt="bookmark site image"
             fill
             priority
