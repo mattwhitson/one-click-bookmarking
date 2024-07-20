@@ -30,13 +30,17 @@ export type InfiniteQueryBookmarks = InfiniteData<
   unknown
 >;
 
-export function Bookmarks() {
+interface Props {
+  searchTerm: string | string[] | undefined;
+}
+
+export function Bookmarks({ searchTerm }: Props) {
   const ref = useRef<HTMLDivElement | null>(null);
   const { data: session } = useSession();
 
   const path = usePathname();
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status } =
-    useGetBookmarks(path);
+    useGetBookmarks(searchTerm, path);
 
   const allTags = useGetTags(session?.user?.id);
 

@@ -19,17 +19,21 @@ import { searchSchema } from "@/lib/zod-schemas";
 import { Button } from "../ui/button";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { client } from "@/lib/hono";
+import { usePathname, useRouter } from "next/navigation";
 
 function useDebounce(searchTerm: string, delay: number) {
+  const router = useRouter();
   const [search, setSearch] = useState("");
 
   useEffect(() => {
     setSearch(searchTerm);
-  }, [searchTerm]);
+  }, [searchTerm, router]);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       setSearch(searchTerm);
+      if (searchTerm !== "") router.push(`/bookmarks?search=${searchTerm}`);
+      else router.push("/bookmarks");
     }, delay);
 
     return () => clearTimeout(timeoutId);
@@ -62,15 +66,17 @@ const useDebouncedQuery = (
 ) => {
   const search = useDebounce(searchTerm, delay);
   return useInfiniteQuery({
-    queryKey: ["userBookmarks", search],
+    queryKey: ["userBookmarks", "/bookmarks", search],
     queryFn: fetchSearchResults,
     initialPageParam: undefined,
     getNextPageParam: (lastPage) => lastPage?.cursor,
     refetchInterval: false,
+    enabled: searchTerm !== "",
   });
 };
 
 export function SearchBar({ session }: { session: Session }) {
+  const router = useRouter();
   const form = useForm<z.infer<typeof searchSchema>>({
     resolver: zodResolver(searchSchema),
     defaultValues: {
@@ -87,7 +93,7 @@ export function SearchBar({ session }: { session: Session }) {
   );
 
   function onSubmit(values: z.infer<typeof searchSchema>) {
-    console.log(values);
+    router.push(`/bookmarks?search=${values.searchTerm}`);
   }
 
   return (

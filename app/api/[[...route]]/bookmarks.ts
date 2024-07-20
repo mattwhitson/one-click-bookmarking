@@ -43,45 +43,97 @@ const app = new Hono()
     "/",
     validator("query", (value, c) => {
       const cursor = value["cursor"];
-
+      const searchTerm = value["searchTerm"];
       return {
         cursor,
+        searchTerm,
       };
     }),
     async (c) => {
       const userId = await authenticateUser();
       const cursor = Number(c.req.query("cursor"));
+      const searchTerm = String(c.req.query("searchTerm"));
+
       try {
-        // TODO: Sort by created at to get newest on top when we update schema
-        const data: BookmarksWithTags[] = await db
-          .select({
-            id: bookmarks.id,
-            url: bookmarks.url,
-            favorite: bookmarks.favorite,
-            createdAt: bookmarks.createdAt,
-            tags: sql<
-              Tag[]
-            >`json_agg(json_build_object('id', ${tags.id}, 'tag', ${tags.tag}))`,
-            title: bookmarks.title,
-            imageUrl: bookmarks.imageUrl,
-            description: bookmarks.description,
-            lastUpdated: bookmarks.lastUpdated,
-          })
-          .from(bookmarks)
-          .leftJoin(
-            bookmarksToTags,
-            eq(bookmarks.id, bookmarksToTags.bookmarkId)
-          )
-          .leftJoin(tags, eq(tags.id, bookmarksToTags.tagId))
-          .where(
-            and(
-              eq(bookmarks.userId, userId),
-              cursor ? lt(bookmarks.id, cursor) : undefined
+        let data: BookmarksWithTags[];
+        if (searchTerm === "undefined") {
+          data = await db
+            .select({
+              id: bookmarks.id,
+              url: bookmarks.url,
+              favorite: bookmarks.favorite,
+              createdAt: bookmarks.createdAt,
+              tags: sql<
+                Tag[]
+              >`json_agg(json_build_object('id', ${tags.id}, 'tag', ${tags.tag}))`,
+              title: bookmarks.title,
+              imageUrl: bookmarks.imageUrl,
+              description: bookmarks.description,
+              lastUpdated: bookmarks.lastUpdated,
+            })
+            .from(bookmarks)
+            .leftJoin(
+              bookmarksToTags,
+              eq(bookmarks.id, bookmarksToTags.bookmarkId)
             )
-          )
-          .limit(BOOKMARK_BATCH_SIZE)
-          .groupBy(bookmarks.id)
-          .orderBy(desc(bookmarks.createdAt));
+            .leftJoin(tags, eq(tags.id, bookmarksToTags.tagId))
+            .where(
+              and(
+                eq(bookmarks.userId, userId),
+                cursor ? lt(bookmarks.id, cursor) : undefined
+              )
+            )
+            .limit(BOOKMARK_BATCH_SIZE)
+            .groupBy(bookmarks.id)
+            .orderBy(desc(bookmarks.createdAt));
+        } else {
+          console.log(searchTerm, cursor);
+          data = await db
+            .select({
+              id: bookmarks.id,
+              url: bookmarks.url,
+              favorite: bookmarks.favorite,
+              createdAt: bookmarks.createdAt,
+              tags: sql<
+                Tag[]
+              >`json_agg(json_build_object('id', ${tags.id}, 'tag', ${tags.tag}))`,
+              title: bookmarks.title,
+              imageUrl: bookmarks.imageUrl,
+              description: bookmarks.description,
+              lastUpdated: bookmarks.lastUpdated,
+            })
+            .from(bookmarks)
+            .leftJoin(
+              bookmarksToTags,
+              eq(bookmarks.id, bookmarksToTags.bookmarkId)
+            )
+            .leftJoin(tags, eq(tags.id, bookmarksToTags.tagId))
+            .where(
+              and(
+                and(
+                  or(
+                    or(
+                      or(
+                        ilike(bookmarks.url, `%${searchTerm}%`),
+                        ilike(bookmarks.title, `%${searchTerm}%`)
+                      ),
+                      ilike(bookmarks.description, `%${searchTerm}%`)
+                    ),
+                    and(
+                      ilike(tags.tag, `%${searchTerm}%`),
+                      eq(tags.userId, userId)
+                    )
+                  ),
+                  eq(bookmarks.userId, userId)
+                ),
+                cursor ? lt(bookmarks.id, cursor) : undefined
+              )
+            )
+            .limit(BOOKMARK_BATCH_SIZE)
+            .groupBy(bookmarks.id)
+            .orderBy(desc(bookmarks.createdAt));
+          console.log(data);
+        }
 
         for (const bookmark of data) {
           if (bookmark.tags[0].id === null) bookmark.tags = [];
@@ -236,9 +288,10 @@ const app = new Hono()
     }),
     async (c) => {
       const userId = await authenticateUser();
-      const searchTerm = c.req.param("searchTerm");
-      const cursor = Number(c.req.param("cursor"));
-
+      const searchTerm = c.req.query("searchTerm");
+      const cursor = Number(c.req.query("cursor"));
+      console.log("YES AI AM HERRE");
+      console.log(searchTerm);
       if (!searchTerm) {
         throw new HTTPException(404, {
           message: "Search term missing missing.",
@@ -289,6 +342,8 @@ const app = new Hono()
         if (data.length === BOOKMARK_BATCH_SIZE) {
           nextCursor = data[BOOKMARK_BATCH_SIZE - 1].id;
         }
+
+        console.log(data);
 
         return c.json(
           {

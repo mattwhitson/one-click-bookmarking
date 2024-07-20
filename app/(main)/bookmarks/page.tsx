@@ -5,5 +5,10 @@ export default async function BookmarksPage({
 }: {
   searchParams?: { [key: string]: string | string[] | undefined };
 }) {
-  return <BookmarksPageWrapper path={"/bookmarks"} params={searchParams} />;
+  return (
+    <BookmarksPageWrapper
+      path={"/bookmarks"}
+      searchParam={searchParams?.["search"]}
+    />
+  );
 }

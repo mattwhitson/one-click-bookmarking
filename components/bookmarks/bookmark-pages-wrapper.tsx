@@ -14,12 +14,15 @@ async function getBookmarks(params: any) {
   const cookie: Record<string, string> = {
     Cookie: headers().get("Cookie")!,
   };
-
   let response;
   if (params.queryKey[1] === "/bookmarks") {
+    let searchTerm = "undefined";
+    if (params.queryKey[2] !== undefined) {
+      searchTerm = params.queryKey[2];
+    }
     response = await client.api.bookmarks.$get(
       {
-        query: { cursor: "undefined" },
+        query: { cursor: "undefined", searchTerm: searchTerm },
       },
       { headers: cookie }
     );
@@ -32,13 +35,6 @@ async function getBookmarks(params: any) {
       },
       { headers: cookie }
     );
-  } else {
-    response = await client.api.bookmarks.search.$get({
-      query: {
-        cursor: "undefined",
-        searchTerm: params.queryKey,
-      },
-    });
   }
 
   if (!response || !response.ok) {
@@ -73,10 +69,13 @@ async function getTags(params: { queryKey: string[] }) {
 
 interface Props {
   path: string;
-  params?: { [key: string]: string | string[] | undefined };
+  searchParam?: string | string[] | undefined;
 }
 
-export default async function BookmarksPageWrapper({ path, params }: Props) {
+export default async function BookmarksPageWrapper({
+  path,
+  searchParam,
+}: Props) {
   const session = await auth();
   if (!session || !session.user?.id) redirect("/login");
   const userId = session.user.id;
@@ -84,10 +83,9 @@ export default async function BookmarksPageWrapper({ path, params }: Props) {
   const queryClient = new QueryClient();
 
   let queryKey = path;
-  if (params?.["search"]) queryKey += params;
 
   await queryClient.prefetchInfiniteQuery({
-    queryKey: ["userBookmarks", queryKey],
+    queryKey: ["userBookmarks", queryKey, searchParam],
     queryFn: getBookmarks,
     initialPageParam: undefined,
     getNextPageParam: (lastPage: any) => lastPage?.cursor,
@@ -101,7 +99,7 @@ export default async function BookmarksPageWrapper({ path, params }: Props) {
   return (
     <main className="w-full min-h-full dark:border-zinc-900 mt-16 sm:ml-20 mb-16">
       <HydrationBoundary state={dehydrate(queryClient)}>
-        <Bookmarks />
+        <Bookmarks searchTerm={searchParam} />
       </HydrationBoundary>
     </main>
   );
