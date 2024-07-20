@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { FiDisc, FiTag } from "react-icons/fi";
 import { BsStar, BsStarFill } from "react-icons/bs";
 import { format } from "date-fns";
@@ -14,11 +15,11 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { client } from "@/lib/hono";
 import { toast } from "sonner";
 import { InfiniteQueryBookmarks } from ".";
+import { ModalTypes, useModalStore } from "@/hooks/modal-store";
 
 interface Props {
   bookmark: Bookmark;
   allTags: Tag[] | undefined;
-  metadata: Metadata;
 }
 
 export interface Bookmark {
@@ -28,12 +29,21 @@ export interface Bookmark {
   createdAt: string | null;
   userId?: string;
   tags: Tag[];
+  title: string | null;
+  imageUrl: string;
+  description: string | null;
+  lastUpdated: string | null;
 }
 
 //TODO: right now loading sucks, need to probably pull the meta loading up and then wait for all the meta tags to load before rendering the posts
 // otherwise it's too janky becaause they load in like a waterfall downawards, one every 1/4  second or so and it looks awful
-export function Card({ bookmark, allTags, metadata }: Props) {
+export function Card({ bookmark, allTags }: Props) {
   const { id, url, favorite, tags } = bookmark;
+
+  const { onOpen } = useModalStore();
+
+  const pathname = usePathname();
+
   const queryClient = useQueryClient();
 
   const { mutate: favoriteMutate, isPending: isFavoritePending } = useMutation({
@@ -51,9 +61,8 @@ export function Card({ bookmark, allTags, metadata }: Props) {
       return data;
     },
     onSuccess: (data) => {
-      console.log(data);
       queryClient.setQueryData(
-        ["userBookmarks"],
+        ["userBookmarks", "/bookmarks"],
         (prev: InfiniteQueryBookmarks) => ({
           ...prev,
           pages: prev.pages.map((page) => ({
@@ -66,12 +75,31 @@ export function Card({ bookmark, allTags, metadata }: Props) {
           })),
         })
       );
+
+      if (!data.favorite) {
+        queryClient.setQueryData(
+          ["userBookmarks", "/favorites"],
+          (prev: InfiniteQueryBookmarks) => ({
+            ...prev,
+            pages: prev.pages.map((page) => ({
+              ...page,
+              bookmarks: [
+                ...page.bookmarks.filter((bookmark) => bookmark.id !== data.id),
+              ],
+            })),
+          })
+        );
+      }
+
+      queryClient.invalidateQueries({
+        queryKey: ["userBookmarks", "/favorites"],
+      });
     },
   });
 
   return (
     <div className="flex w-full">
-      <article className="sm:min-w-[25%] min-h-full border-r-[1px] dark:border-zinc-900 flex flex-col py-4">
+      <article className="hidden sm:min-w-[25%] min-h-full border-r-[1px] border-l-[1px] border-b-[1px] dark:border-zinc-900 sm:flex flex-col py-4">
         <div className="mt-[0.65rem] relative">
           <p className="text-center pt-[0.1rem] text-xs pl-3 sm:text-sm sm:text-end pr-3 sm:pr-4">
             {format(bookmark.createdAt!, "do 'of' MMMM yyyy")}
@@ -79,13 +107,13 @@ export function Card({ bookmark, allTags, metadata }: Props) {
           <FiDisc className="w-4 h-4 absolute top-1 right-[-0.5rem] bg-background rounded-full" />
         </div>
       </article>
-      <article className="flex flex-col gap-y-4 px-4 mt-2 py-4 w-full">
+      <article className="flex flex-col gap-y-4 px-4 pb-4 pt-6 w-full border-b-[1px] border-r-[1px] dark:border-zinc-900">
         <div className="flex justify-between items-center">
-          <h3 className="text-xl font-semibold">{metadata.title}</h3>
+          <h3 className="text-xl font-semibold">{bookmark.title}</h3>
           <BookmarkDropdown bookmark={bookmark} tags={allTags ?? []} />
         </div>
         <p className="text-sm text-zinc-800 dark:text-zinc-300 line-clamp-3">
-          {metadata.description}
+          {bookmark.description}
         </p>
         <Link
           href={url}
@@ -100,7 +128,7 @@ export function Card({ bookmark, allTags, metadata }: Props) {
 
           <Image
             className="object-contain"
-            src={`${metadata.image}`}
+            src={`${bookmark.imageUrl}`}
             alt="bookmark site image"
             fill
             priority
@@ -124,7 +152,14 @@ export function Card({ bookmark, allTags, metadata }: Props) {
           </Button>
         </Link>
         <div className="flex flex-row gap-x-4 items-center">
-          <FiTag className="min-h-6 min-w-6 text-cyan-500" />
+          <Button className="p-2 bg-transparent text-primary hover:bg-transparent">
+            <FiTag
+              className="min-h-6 min-w-6 text-cyan-500"
+              onClick={() =>
+                onOpen(ModalTypes.ChangeTag, { bookmark: bookmark })
+              }
+            />
+          </Button>
           <div className="flex gap-x-4 flex-wrap gap-y-4">
             {tags.map(({ id, tag }) => (
               <p
@@ -136,6 +171,10 @@ export function Card({ bookmark, allTags, metadata }: Props) {
             ))}
           </div>
         </div>
+        <p className="sm:hidden text-sm">
+          Saved on the{" "}
+          <em>{format(bookmark.createdAt!, "do 'of' MMMM yyyy")}</em>
+        </p>
       </article>
     </div>
   );

@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -43,14 +44,17 @@ import { auth } from "@/auth";
 import { useSession } from "next-auth/react";
 import { useGetTags } from "@/hooks/use-get-tags";
 import { pages } from "next/dist/build/templates/app-page";
+import { Loader2 } from "lucide-react";
 
-export function AddTagModal() {
+export function ChangeTagsModal() {
   const { data: session } = useSession();
 
   const tags = useGetTags(session?.user?.id);
 
+  const pathname = usePathname();
+
   const { type, isOpen, onClose, data } = useModalStore();
-  const isModalOpen = isOpen && type === ModalTypes.AddTag;
+  const isModalOpen = isOpen && type === ModalTypes.ChangeTag;
 
   const [selectedTags, setSelectedTags] = useState<boolean[]>([]);
 
@@ -63,6 +67,7 @@ export function AddTagModal() {
       }
       return false;
     });
+
     setSelectedTags(result);
   }, [isModalOpen, data?.bookmark?.tags, tags.data]);
 
@@ -90,30 +95,34 @@ export function AddTagModal() {
       throw error; // why am i throwing here?
     },
     onSuccess(result, variables) {
-      queryClient.setQueryData(
-        ["userBookmarks"],
-        (prev: InfiniteQueryBookmarks) => ({
-          ...prev,
-          pages: prev?.pages.map((page) => ({
-            ...page,
-            bookmarks: page.bookmarks.map((bookmark) =>
-              bookmark.id === variables.bookmarkId
-                ? {
-                    ...bookmark,
-                    tags: [
-                      ...bookmark.tags,
-                      { id: result.id, tag: result.tag },
-                    ],
-                  }
-                : { ...bookmark }
-            ),
-          })),
-        })
-      );
+      const paths = ["/bookmarks", "/favorites"];
+      paths.forEach((path) => {
+        queryClient.setQueryData(
+          ["userBookmarks", path],
+          (prev: InfiniteQueryBookmarks) => ({
+            ...prev,
+            pages: prev?.pages.map((page) => ({
+              ...page,
+              bookmarks: page.bookmarks.map((bookmark) =>
+                bookmark.id === variables.bookmarkId
+                  ? {
+                      ...bookmark,
+                      tags: [
+                        ...bookmark.tags,
+                        { id: result.id, tag: result.tag },
+                      ],
+                    }
+                  : { ...bookmark }
+              ),
+            })),
+          })
+        );
+      });
       queryClient.setQueryData(["tags", session?.user?.id], (prev: Tag[]) => {
         return [...prev, { id: result?.id, tag: result?.tag }];
       });
-      setSelectedTags((prev) => [...prev, true]);
+      // kind of hacky, should think of a better way of doing this (maybe should make a useQuery for each bookmark id? then i wouldn't need to pass in the data object from useModalState)
+      data.bookmark.tags.push({ id: result?.id, tag: result?.tag });
     },
   });
 
@@ -133,41 +142,46 @@ export function AddTagModal() {
 
         if (res.ok) {
           const result = await res.json();
+          toast("Tags updated!");
           return result;
         }
         const error = await res.json();
+        toast("Something went wrong...");
         throw error;
       },
       onSuccess(data, variables) {
         const added = data.added;
         const deleted = data.deleted;
         const bookmarkId = data.bookmarkId;
-        queryClient.setQueryData(
-          ["userBookmarks"],
-          (prev: InfiniteQueryBookmarks) => ({
-            ...prev,
-            pages: prev.pages.map((page) => ({
-              ...page,
-              bookmarks: page.bookmarks.map((bookmark) =>
-                bookmark.id === bookmarkId
-                  ? {
-                      ...bookmark,
-                      tags: [
-                        ...bookmark.tags.filter(
-                          (tag) => !deleted?.includes(tag.id)
-                        ),
-                        ...added,
-                      ],
-                    }
-                  : { ...bookmark }
-              ),
-            })),
-          })
-        );
+        const paths = ["/bookmarks", "/favorites"];
+        paths.forEach((path) => {
+          queryClient.setQueryData(
+            ["userBookmarks", path],
+            (prev: InfiniteQueryBookmarks) => ({
+              ...prev,
+              pages: prev.pages.map((page) => ({
+                ...page,
+                bookmarks: page.bookmarks.map((bookmark) =>
+                  bookmark.id === bookmarkId
+                    ? {
+                        ...bookmark,
+                        tags: [
+                          ...bookmark.tags.filter(
+                            (tag) => !deleted?.includes(tag.id)
+                          ),
+                          ...added,
+                        ],
+                      }
+                    : { ...bookmark }
+                ),
+              })),
+            })
+          );
+        });
       },
     });
 
-  const onSubmit = async (values: z.infer<typeof newTagSchema>) => {
+  const onNewTagSubmit = async (values: z.infer<typeof newTagSchema>) => {
     addTag({ tag: values.tag, bookmarkId: data.bookmark.id });
   };
 
@@ -209,20 +223,26 @@ export function AddTagModal() {
           <CommandList>
             <CommandEmpty>No results found.</CommandEmpty>
             <CommandGroup heading="Your tags" className="-z-50">
-              {tags.data?.map(({ id, tag }, index) => (
-                <CommandItem
-                  selected={selectedTags && selectedTags[index]}
-                  key={id}
-                  className="my-1"
-                  onSelect={() => {
-                    setSelectedTags((state) =>
-                      state?.map((tag, i) => (i !== index ? tag : !tag))
-                    );
-                  }}
-                >
-                  {tag}
-                </CommandItem>
-              ))}
+              {tags.data ? (
+                <>
+                  {tags.data.map(({ id, tag }, index) => (
+                    <CommandItem
+                      selected={selectedTags && selectedTags[index]}
+                      key={id}
+                      className="my-1"
+                      onSelect={() => {
+                        setSelectedTags((state) =>
+                          state?.map((tag, i) => (i !== index ? tag : !tag))
+                        );
+                      }}
+                    >
+                      {tag}
+                    </CommandItem>
+                  ))}
+                </>
+              ) : (
+                <Loader2 className="animate-spin mx-auto w-12 h-12" />
+              )}
             </CommandGroup>
           </CommandList>
         </Command>
@@ -235,7 +255,7 @@ export function AddTagModal() {
         </Button>
         <Form {...form}>
           <form
-            onSubmit={form.handleSubmit(onSubmit)}
+            onSubmit={form.handleSubmit(onNewTagSubmit)}
             className="flex flex-col space-y-8"
           >
             <FormField

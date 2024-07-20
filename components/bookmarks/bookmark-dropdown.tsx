@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { FiMoreHorizontal } from "react-icons/fi";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,14 +11,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useState } from "react";
 import { ModalTypes, useModalStore } from "@/hooks/modal-store";
 import { Tag } from "@/app/api/[[...route]]/bookmarks";
 import { toast } from "sonner";
 import { client } from "@/lib/hono";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Bookmark } from "./card";
-import { InfiniteQueryBookmarks } from ".";
+import { Bookmark } from "@/components/bookmarks/card";
+import { InfiniteQueryBookmarks } from "@/components/bookmarks/index";
 
 interface Props {
   bookmark: Bookmark;
@@ -27,6 +27,7 @@ interface Props {
 export function BookmarkDropdown({ bookmark, tags }: Props) {
   const { onOpen } = useModalStore();
   const queryClient = useQueryClient();
+
   const { mutate: deleteMutation, isPending: deleteIsPending } = useMutation({
     mutationFn: async (bookmarkId: number) => {
       const res = await client.api.bookmarks[":bookmarkId"].$delete({
@@ -43,19 +44,21 @@ export function BookmarkDropdown({ bookmark, tags }: Props) {
     // this code is particularily confusing, basically react query needs the cursor to be in the page along with
     // the bookmarks so im spreading the whole page object before filtering the bookmarks
     onSuccess(res, bookmarkId) {
-      queryClient.setQueryData(
-        ["userBookmarks"], // TODO: change back to bookmarks since the problem has been solved
-        (prev: InfiniteQueryBookmarks) => {
-          const result = prev?.pages.map((page) => ({
-            ...page,
-            bookmarks: page.bookmarks.filter((post) => post.id !== bookmarkId),
-            metadata: page.metadata.filter(
-              (post) => post.bookmarkId !== bookmarkId
-            ),
-          }));
-          return { ...prev, pages: result };
-        }
-      );
+      const paths = ["/bookmarks", "/favorites"];
+      paths.forEach((path) => {
+        queryClient.setQueryData(
+          ["userBookmarks", path], // TODO: change back to bookmarks since the problem has been solved
+          (prev: InfiniteQueryBookmarks) => {
+            const result = prev?.pages.map((page) => ({
+              ...page,
+              bookmarks: page.bookmarks.filter(
+                (post) => post.id !== bookmarkId
+              ),
+            }));
+            return { ...prev, pages: result };
+          }
+        );
+      });
     },
   });
   return (
@@ -69,7 +72,7 @@ export function BookmarkDropdown({ bookmark, tags }: Props) {
         <DropdownMenuLabel>Options</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          onClick={() => onOpen(ModalTypes.AddTag, { bookmark: bookmark })} // get rid of this, we can use useQuery hook
+          onClick={() => onOpen(ModalTypes.ChangeTag, { bookmark: bookmark })} // get rid of this, we can use useQuery hook
         >
           Add tag
         </DropdownMenuItem>

@@ -27,7 +27,7 @@
 //   user: one(usersTable),
 // }));
 
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   boolean,
   timestamp,
@@ -65,6 +65,12 @@ export const bookmarks = pgTable(
     userId: text("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
+    title: text("title"),
+    imageUrl: text("image_url").notNull(),
+    description: text("description"),
+    lastUpdated: timestamp("metadata_last_update", {
+      withTimezone: true,
+    }).defaultNow(),
   },
   (table) => {
     return {

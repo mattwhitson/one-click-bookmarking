@@ -11,3 +11,9 @@ export const newTagSchema = z.object({
     message: "Tag cannot be empty.",
   }),
 });
+
+export const searchSchema = z.object({
+  searchTerm: z.string().min(1, {
+    message: "Tag cannot be empty",
+  }),
+});

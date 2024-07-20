@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -33,6 +34,7 @@ import { Tag } from "@/app/api/[[...route]]/bookmarks";
 export function AddBookmarkModal() {
   const { type, isOpen, onClose } = useModalStore();
   const queryClient = useQueryClient();
+  const pathname = usePathname();
   const isModalOpen = isOpen && type === ModalTypes.AddBookmark;
 
   const form = useForm<z.infer<typeof newBookmarkSchema>>({
@@ -62,7 +64,7 @@ export function AddBookmarkModal() {
         const bookmark = { ...data.bookmark, tags: [] as Tag[] };
         const metadata = { ...data.metadata };
         queryClient.setQueryData(
-          ["userBookmarks"],
+          ["userBookmarks", pathname],
           (prev: InfiniteQueryBookmarks) => ({
             ...prev,
             pages: prev.pages.map((page, index) =>
@@ -70,7 +72,6 @@ export function AddBookmarkModal() {
                 ? {
                     ...page,
                     bookmarks: [bookmark, ...page.bookmarks],
-                    metadata: [metadata, ...page.metadata],
                   }
                 : { ...page }
             ),

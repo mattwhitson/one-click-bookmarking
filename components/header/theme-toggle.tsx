@@ -44,7 +44,7 @@ export function ThemeToggle() {
 
   if (!isMounted)
     return (
-      <Button variant="ghost" className="ml-2">
+      <Button variant="ghost" className="ml-2 h-10 w-10 p-0">
         <Loader2 className="h-5 w-5 animate-spin" />
       </Button>
     );
@@ -52,7 +52,7 @@ export function ThemeToggle() {
   return (
     <Button
       variant="ghost"
-      className="ml-2 overflow-hidden h-12 w-12 p-0"
+      className="ml-2 overflow-hidden h-10 w-10 p-0"
       onClick={handleThemeChange}
     >
       {currentTheme === "light" ? (

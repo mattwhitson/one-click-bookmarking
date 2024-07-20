@@ -1,4 +1,6 @@
 "use client";
+
+import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Loader2 } from "lucide-react";
 import { Bookmark, Card } from "@/components/bookmarks/card";
@@ -10,10 +12,6 @@ import {
   QueryClient,
   useQueryClient,
 } from "@tanstack/react-query";
-
-interface Props {
-  favorites: boolean;
-}
 
 export type InfiniteQueryBookmarks = InfiniteData<
   {
@@ -28,23 +26,17 @@ export type InfiniteQueryBookmarks = InfiniteData<
       }[];
     }[];
     cursor: number | undefined;
-    metadata: {
-      title: string;
-      image: string;
-      description: string;
-      bookmarkId: number;
-    }[];
   },
   unknown
 >;
 
-export function Bookmarks({ favorites }: Props) {
+export function Bookmarks() {
   const ref = useRef<HTMLDivElement | null>(null);
   const { data: session } = useSession();
-  const queryClient = useQueryClient();
 
+  const path = usePathname();
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status } =
-    useGetBookmarks();
+    useGetBookmarks(path);
 
   const allTags = useGetTags(session?.user?.id);
 
@@ -68,7 +60,7 @@ export function Bookmarks({ favorites }: Props) {
     return () => window.removeEventListener("scroll", handleScroll, true);
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
-  if (data === undefined && status !== "success") {
+  if ((data === undefined && status !== "success") || status === "pending") {
     return <Loader2 className="animate-spin mx-auto mt-16 w-12 h-12" />;
   }
 
@@ -81,15 +73,12 @@ export function Bookmarks({ favorites }: Props) {
               key={bookmark.id}
               bookmark={bookmark}
               allTags={allTags.data}
-              metadata={page.metadata[j]}
-              // TODO: figure out how to whether post is in same day or not so we only display the date when the bookmark
-              //       is from an earlier day
             />
           ))}
         </Fragment>
       ))}
       {isFetchingNextPage ? (
-        <Loader2 className="animate-spin mx-auto w-12 h-12" />
+        <Loader2 className="animate-spin mx-auto w-12 h-12 mt-6" />
       ) : (
         <div ref={ref} />
       )}
