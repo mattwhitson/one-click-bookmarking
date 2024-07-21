@@ -16,7 +16,7 @@ body {
 }
 
 :root {
-  overflow: hidden;
+  overflow-y: hidden;
 }
 
 /*This attribute set in theme-toggle.tsx after mount because when i was putting

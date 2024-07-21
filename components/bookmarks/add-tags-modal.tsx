@@ -87,35 +87,40 @@ export function ChangeTagsModal() {
         toast("Tag successfully created");
         return tag;
       }
-      const error = await res.json();
-      toast(error.error);
+      const { error } = await res.json();
+      toast(error);
       throw error; // why am i throwing here?
     },
     onSuccess(result, variables) {
       const paths = ["/bookmarks", "/favorites"];
-      const searchParams: (string | null)[] = [search];
-      if (search !== null) searchParams.push(null);
+      const searchParams: (string | undefined)[] = [search || undefined];
+      if (search !== null) searchParams.push(undefined);
+
       paths.forEach((path) => {
         searchParams.forEach((param) => {
           queryClient.setQueryData(
             ["userBookmarks", path, param],
-            (prev: InfiniteQueryBookmarks) => ({
-              ...prev,
-              pages: prev?.pages.map((page) => ({
-                ...page,
-                bookmarks: page.bookmarks.map((bookmark) =>
-                  bookmark.id === variables.bookmarkId
-                    ? {
-                        ...bookmark,
-                        tags: [
-                          ...bookmark.tags,
-                          { id: result.id, tag: result.tag },
-                        ],
-                      }
-                    : { ...bookmark }
-                ),
-              })),
-            })
+            (prev: InfiniteQueryBookmarks) => {
+              if (prev === undefined) return undefined;
+              const res = {
+                ...prev,
+                pages: prev?.pages.map((page) => ({
+                  ...page,
+                  bookmarks: page.bookmarks.map((bookmark) =>
+                    bookmark.id === variables.bookmarkId
+                      ? {
+                          ...bookmark,
+                          tags: [
+                            ...bookmark.tags,
+                            { id: result.id, tag: result.tag },
+                          ],
+                        }
+                      : { ...bookmark }
+                  ),
+                })),
+              };
+              return res;
+            }
           );
         });
       });
@@ -150,39 +155,49 @@ export function ChangeTagsModal() {
         toast("Something went wrong...");
         throw error;
       },
-      onSuccess(data, variables) {
-        const added = data.added;
-        const deleted = data.deleted;
-        const bookmarkId = data.bookmarkId;
+      onSuccess(result, variables) {
+        const added = result.added;
+        const deleted = result.deleted;
+        const bookmarkId = result.bookmarkId;
+
         const paths = ["/bookmarks", "/favorites"];
-        const searchParams: (string | null)[] = [search];
-        if (search !== null) searchParams.push(null);
+        const searchParams: (string | undefined)[] = [search || undefined];
+        if (search !== null) searchParams.push(undefined);
+
         paths.forEach((path) => {
           searchParams.forEach((param) => {
             queryClient.setQueryData(
               ["userBookmarks", path, param],
-              (prev: InfiniteQueryBookmarks) => ({
-                ...prev,
-                pages: prev.pages.map((page) => ({
-                  ...page,
-                  bookmarks: page.bookmarks.map((bookmark) =>
-                    bookmark.id === bookmarkId
-                      ? {
-                          ...bookmark,
-                          tags: [
-                            ...bookmark.tags.filter(
-                              (tag) => !deleted?.includes(tag.id)
-                            ),
-                            ...added,
-                          ],
-                        }
-                      : { ...bookmark }
-                  ),
-                })),
-              })
+              (prev: InfiniteQueryBookmarks) => {
+                if (prev === undefined) return undefined;
+                return {
+                  ...prev,
+                  pages: prev.pages.map((page) => ({
+                    ...page,
+                    bookmarks: page.bookmarks.map((bookmark) =>
+                      bookmark.id === bookmarkId
+                        ? {
+                            ...bookmark,
+                            tags: [
+                              ...bookmark.tags.filter(
+                                (tag) => !deleted?.includes(tag.id)
+                              ),
+                              ...added,
+                            ],
+                          }
+                        : { ...bookmark }
+                    ),
+                  })),
+                };
+              }
             );
           });
         });
+
+        data.bookmark.tags = [
+          ...data.bookmark.tags.filter((tag) => !deleted?.includes(tag.id)),
+          ...added,
+        ];
       },
     });
 

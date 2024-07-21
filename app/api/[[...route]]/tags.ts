@@ -67,19 +67,39 @@ const app = new Hono()
 
       const userId = await authenticateUser();
 
+      try {
+        const totalTagsWithUserId = await db
+          .select({ count: count() })
+          .from(tags)
+          .where(eq(tags.userId, userId));
+
+        if (totalTagsWithUserId[0].count >= 100) {
+          return c.json(
+            {
+              error:
+                "You've reached your tag limit! Delete some before making a new one!",
+            },
+            400
+          );
+        }
+      } catch (error) {
+        console.log(error);
+        throw new HTTPException(500, { message: "Database Error" });
+      }
+
       let alreadyExists;
       try {
         alreadyExists = await db
           .select({ count: count() })
           .from(tags)
           .where(eq(tags.tag, tag));
+
+        if (alreadyExists[0].count > 0) {
+          return c.json({ error: "Tag already exists!" }, 409);
+        }
       } catch (error) {
         console.log(error);
         throw new HTTPException(500, { message: "Database Error" });
-      }
-
-      if (alreadyExists[0].count > 0) {
-        return c.json({ error: "Tag already exists!" }, 409);
       }
 
       try {
@@ -182,6 +202,32 @@ const app = new Hono()
           },
           200
         );
+      } catch (error) {
+        console.log(error);
+        throw new HTTPException(500, { message: "Database Error" });
+      }
+    }
+  )
+  .delete(
+    "/:tagId",
+    validator("param", (value, c) => {
+      const tagId = value["tagId"];
+      if (!tagId || typeof tagId !== "string") {
+        throw new HTTPException(404, { message: "Query param missing." });
+      }
+
+      return {
+        tagId,
+      };
+    }),
+    async (c) => {
+      await authenticateUser();
+      const tagId = Number(c.req.param("tagId"));
+
+      try {
+        await db.delete(tags).where(eq(tags.id, tagId));
+
+        return c.json({ tagId }, 200);
       } catch (error) {
         console.log(error);
         throw new HTTPException(500, { message: "Database Error" });

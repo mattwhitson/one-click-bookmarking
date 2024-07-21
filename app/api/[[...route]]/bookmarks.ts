@@ -5,7 +5,12 @@ import { zValidator } from "@hono/zod-validator";
 import { parse } from "node-html-parser";
 import { cleanUpUrl } from "@/lib/utils";
 import { db } from "@/db";
-import { bookmarks, bookmarksToTags, tags } from "@/db/schema";
+import {
+  bookmarks,
+  bookmarksRecentlyCreated,
+  bookmarksToTags,
+  tags,
+} from "@/db/schema";
 import { newBookmarkSchema } from "@/lib/zod-schemas";
 import { authenticateUser } from "@/auth";
 import { and, count, desc, eq, ilike, lt, or, sql } from "drizzle-orm";
@@ -307,6 +312,44 @@ const app = new Hono()
       throw new HTTPException(400, { message: "Missing url" });
     }
 
+    let hasRecentBookmarksRecord = false;
+    try {
+      const recentBookmarks = await db
+        .select({
+          counter: bookmarksRecentlyCreated.count,
+          createdAt: bookmarksRecentlyCreated.createdAt,
+        })
+        .from(bookmarksRecentlyCreated)
+        .where(eq(bookmarksRecentlyCreated.userId, userId));
+      // check if user has reached their daily bookmark limit
+
+      if (recentBookmarks[0]) {
+        if (
+          recentBookmarks[0].createdAt.getTime() - Date.now() >
+          1000 * 3600 * 24
+        ) {
+          await db
+            .delete(bookmarksRecentlyCreated)
+            .where(eq(bookmarksRecentlyCreated.userId, userId));
+        } else if (recentBookmarks[0].counter >= 100) {
+          const newTime = new Date(
+            recentBookmarks[0].createdAt.getTime() + 1000 * 3600 * 24
+          ).toString();
+          return c.json(
+            {
+              error: `You've reached your daily bookmark limit! Please wait until ${newTime}`,
+            },
+            400
+          );
+        } else {
+          hasRecentBookmarksRecord = true;
+        }
+      }
+    } catch (error) {
+      console.log(error);
+      throw new HTTPException(500, { message: "Database Error" });
+    }
+
     // All this is basically just making sure this isn't already in the database and, if it is, stop the new bookmark creation
     // Also removing trailing slashes before to ensure we don't add the same bookmark twice
     if (url[url.length - 1] === "/") url = url.slice(0, -1);
@@ -330,7 +373,7 @@ const app = new Hono()
       .where(or(eq(bookmarks.url, copy), eq(bookmarks.url, url)));
 
     if (result[0].count > 0) {
-      return c.json({ message: "Bookmark already exists!" }, 409);
+      return c.json({ error: "Bookmark already exists!" }, 409);
     }
 
     const meta = await getMetadata(url);
@@ -350,6 +393,17 @@ const app = new Hono()
 
       const metadata: Metadata = await getMetadata(bookmark[0].url);
       metadata.bookmarkId = bookmark[0].id;
+
+      if (hasRecentBookmarksRecord) {
+        await db
+          .update(bookmarksRecentlyCreated)
+          .set({ createdAt: sql`${bookmarksRecentlyCreated.createdAt} + 1` })
+          .where(eq(bookmarksRecentlyCreated.userId, userId));
+      } else {
+        await db
+          .insert(bookmarksRecentlyCreated)
+          .values({ userId: userId, count: 1 });
+      }
 
       return c.json({ bookmark: bookmark[0], metadata }, 200);
     } catch (error) {

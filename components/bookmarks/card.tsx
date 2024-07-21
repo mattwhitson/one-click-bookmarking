@@ -35,8 +35,6 @@ export interface Bookmark {
   lastUpdated: string | null;
 }
 
-//TODO: right now loading sucks, need to probably pull the meta loading up and then wait for all the meta tags to load before rendering the posts
-// otherwise it's too janky becaause they load in like a waterfall downawards, one every 1/4  second or so and it looks awful
 export function Card({ bookmark, allTags }: Props) {
   const { id, url, favorite, tags } = bookmark;
 
@@ -62,35 +60,25 @@ export function Card({ bookmark, allTags }: Props) {
       return data;
     },
     onSuccess: (data) => {
-      queryClient.setQueryData(
-        ["userBookmarks", "/bookmarks", search],
-        (prev: InfiniteQueryBookmarks) => ({
-          ...prev,
-          pages: prev.pages.map((page) => ({
-            ...page,
-            bookmarks: page.bookmarks.map((bookmark) =>
-              bookmark.id === data.id
-                ? { ...bookmark, favorite: data.favorite }
-                : { ...bookmark }
-            ),
-          })),
-        })
-      );
+      const searchParams: (string | undefined)[] = [search || undefined];
+      if (search !== null) searchParams.push(undefined);
 
-      queryClient.setQueryData(
-        ["userBookmarks", "/bookmarks", undefined],
-        (prev: InfiniteQueryBookmarks) => ({
-          ...prev,
-          pages: prev.pages.map((page) => ({
-            ...page,
-            bookmarks: page.bookmarks.map((bookmark) =>
-              bookmark.id === data.id
-                ? { ...bookmark, favorite: data.favorite }
-                : { ...bookmark }
-            ),
-          })),
-        })
-      );
+      searchParams.forEach((param) => {
+        queryClient.setQueryData(
+          ["userBookmarks", "/bookmarks", param],
+          (prev: InfiniteQueryBookmarks) => ({
+            ...prev,
+            pages: prev.pages.map((page) => ({
+              ...page,
+              bookmarks: page.bookmarks.map((bookmark) =>
+                bookmark.id === data.id
+                  ? { ...bookmark, favorite: data.favorite }
+                  : { ...bookmark }
+              ),
+            })),
+          })
+        );
+      });
 
       if (!data.favorite) {
         queryClient.setQueryData(

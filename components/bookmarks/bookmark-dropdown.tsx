@@ -44,13 +44,11 @@ export function BookmarkDropdown({ bookmark, tags }: Props) {
         toast("Something went wrong.");
       }
     },
-    // this code is particularily confusing, basically react query needs the cursor to be in the page along with
-    // the bookmarks so im spreading the whole page object before filtering the bookmarks
     onSuccess(res, bookmarkId) {
       const paths = ["/bookmarks", "/favorites"];
       paths.forEach((path) => {
         queryClient.setQueryData(
-          ["userBookmarks", path, search], // TODO: change back to bookmarks since the problem has been solved
+          ["userBookmarks", path, search],
           (prev: InfiniteQueryBookmarks) => {
             const result = prev?.pages.map((page) => ({
               ...page,
@@ -77,7 +75,7 @@ export function BookmarkDropdown({ bookmark, tags }: Props) {
         <DropdownMenuItem
           onClick={() => onOpen(ModalTypes.ChangeTag, { bookmark: bookmark })} // get rid of this, we can use useQuery hook
         >
-          Add tag
+          Edit tags
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => deleteMutation(bookmark.id)}>
           Delete

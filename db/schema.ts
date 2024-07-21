@@ -92,6 +92,16 @@ export const bookmarksToTagsRelations = relations(
   })
 );
 
+export const bookmarksRecentlyCreated = pgTable("bookmarks_recently_created", {
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  count: integer("bookmark_count").notNull(),
+});
+
 // O-Auth stuff
 export const accounts = pgTable(
   "account",

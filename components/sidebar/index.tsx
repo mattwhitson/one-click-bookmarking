@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { HomeIcon, Star } from "lucide-react";
+import { FiTag } from "react-icons/fi";
 import { Button } from "@/components/ui/button";
 import { SignOut } from "@/components/sidebar/sign-out";
 import { AddBookmarkButton } from "@/components/sidebar/add-bookmark-button";
@@ -12,7 +13,7 @@ export async function Sidebar() {
   const session = await auth();
   return (
     <nav className="hidden sm:flex flex-col rounded-sm min-w-20 items-center gap-y-6 pb-6 py-1 fixed mt-20">
-      <Button variant="ghost" className="h-12 w-12 p-0">
+      <Button asChild variant="ghost" className="h-12 w-12 p-0">
         <Link href="/bookmarks">
           <HomeIcon className="w-8 h-8" />
         </Link>
@@ -21,6 +22,11 @@ export async function Sidebar() {
       <Button asChild variant="ghost" className="h-12 w-12 p-0">
         <Link href="/favorites">
           <Star className="w-8 h-8" />
+        </Link>
+      </Button>
+      <Button asChild variant="ghost" className="h-12 w-12 p-0">
+        <Link href="/tags">
+          <FiTag className="h-8 w-8" />
         </Link>
       </Button>
       <DownloadCsv />
