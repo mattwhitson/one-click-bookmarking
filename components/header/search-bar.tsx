@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { searchSchema } from "@/lib/zod-schemas";
-import { Button } from "../ui/button";
+import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useModalStore } from "@/hooks/modal-store";
 import { useDebouncedQuery } from "@/hooks/use-debounced-query";

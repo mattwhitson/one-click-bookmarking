@@ -1,6 +1,6 @@
 import { authenticateUser } from "@/auth";
 import { db } from "@/db";
-import { sessions, users } from "@/db/schema";
+import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";

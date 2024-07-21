@@ -7,11 +7,7 @@ import { Bookmark, Card } from "@/components/bookmarks/card";
 import { useGetBookmarks } from "@/hooks/use-get-bookmarks";
 import { useGetTags } from "@/hooks/use-get-tags";
 import { Fragment, useEffect, useRef } from "react";
-import {
-  InfiniteData,
-  QueryClient,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { InfiniteData } from "@tanstack/react-query";
 
 export type InfiniteQueryBookmarks = InfiniteData<
   {

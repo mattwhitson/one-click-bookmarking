@@ -1,12 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import { MenuIcon } from "lucide-react";
 import { ThemeToggle } from "@/components/header/theme-toggle";
 import { auth } from "@/auth";
-import { Button } from "@/components/ui/button";
-import { SearchBar } from "./search-bar";
-import { MobileSidebarButton } from "./mobile-sidebar-button";
+import { SearchBar } from "@/components/header/search-bar";
+import { MobileSidebarButton } from "@/components/header/mobile-sidebar-button";
 
 export async function Header() {
   const session = await auth();

@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -19,7 +19,6 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-  CommandSeparator,
 } from "@/components/ui/command";
 import { ModalTypes, useModalStore } from "@/hooks/modal-store";
 import { Input } from "@/components/ui/input";
@@ -36,14 +35,11 @@ import { Button } from "../ui/button";
 import { client } from "@/lib/hono";
 import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Bookmark } from "./card";
 import { Tag } from "@/app/api/[[...route]]/bookmarks";
 import { useEffect, useState } from "react";
 import { InfiniteQueryBookmarks } from ".";
-import { auth } from "@/auth";
 import { useSession } from "next-auth/react";
 import { useGetTags } from "@/hooks/use-get-tags";
-import { pages } from "next/dist/build/templates/app-page";
 import { Loader2 } from "lucide-react";
 
 export function ChangeTagsModal() {

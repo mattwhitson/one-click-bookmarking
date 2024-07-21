@@ -1,8 +1,9 @@
 "use client";
 
+import { useEffect } from "react";
+import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
-import { useEffect } from "react";
 import Link from "next/link";
 import {
   Sheet,
@@ -13,7 +14,6 @@ import {
 } from "@/components/ui/sheet";
 import { ModalTypes, useModalStore } from "@/hooks/modal-store";
 import { SearchBar } from "@/components/header/search-bar";
-import { usePathname } from "next/navigation";
 
 export function MobileSidebar({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession();

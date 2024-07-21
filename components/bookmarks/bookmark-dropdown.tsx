@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { FiMoreHorizontal } from "react-icons/fi";
 import { Button } from "@/components/ui/button";
 import {

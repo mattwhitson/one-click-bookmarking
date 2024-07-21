@@ -1,9 +1,9 @@
-import { auth, authenticateUser } from "@/auth";
+import { authenticateUser } from "@/auth";
 import { db } from "@/db";
 import { bookmarksToTags, tags } from "@/db/schema";
 import { newTagSchema } from "@/lib/zod-schemas";
 import { zValidator } from "@hono/zod-validator";
-import { and, count, eq, inArray, sql } from "drizzle-orm";
+import { and, count, eq, inArray } from "drizzle-orm";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { validator } from "hono/validator";
@@ -67,7 +67,6 @@ const app = new Hono()
 
       const userId = await authenticateUser();
 
-      // TODO: Make sure that an identical tag doesn't already exist for this user before adding new one to database
       let alreadyExists;
       try {
         alreadyExists = await db
@@ -141,7 +140,6 @@ const app = new Hono()
 
       try {
         let deleted,
-          returnedDeleted,
           added: Tag[] = [];
         if (addedTags.length > 0) {
           let addedTagIds = await db

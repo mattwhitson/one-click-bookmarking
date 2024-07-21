@@ -2,12 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { FiDisc, FiTag } from "react-icons/fi";
 import { BsStar, BsStarFill } from "react-icons/bs";
 import { format } from "date-fns";
 import { BookmarkDropdown } from "@/components/bookmarks/bookmark-dropdown";
-import { Metadata, Tag } from "@/app/api/[[...route]]/bookmarks";
+import { Tag } from "@/app/api/[[...route]]/bookmarks";
 import { Button } from "../ui/button";
 
 import { cleanUpUrl } from "@/lib/utils";

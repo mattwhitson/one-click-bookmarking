@@ -1,4 +1,3 @@
-import Image from "next/image";
 import { Session } from "next-auth";
 import { Button } from "@/components/ui/button";
 import { signOut } from "@/auth";

@@ -1,4 +1,4 @@
-import { Hono, Context } from "hono";
+import { Hono } from "hono";
 import { handle } from "hono/vercel";
 import bookmarks from "@/app/api/[[...route]]/bookmarks";
 import tags from "@/app/api/[[...route]]/tags";
@@ -11,7 +11,6 @@ const app = new Hono().basePath("/api");
 
 app.onError((error, c) => {
   if (error instanceof HTTPException) {
-    // Get the custom response
     return error.getResponse();
   }
   console.log(error);

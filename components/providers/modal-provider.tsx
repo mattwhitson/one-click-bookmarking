@@ -1,12 +1,12 @@
 import { auth } from "@/auth";
-import { AddBookmarkModal } from "../bookmarks/add-bookmark-modal";
-import { ChangeTagsModal } from "../bookmarks/add-tags-modal";
-import { DeleteAccountModal } from "../sidebar/delete-account-modal";
-import { MobileSidebar } from "../sidebar/mobile-sidebar";
-import { SidebarDropdown } from "../sidebar/sidebar-dropdown";
-import { Button } from "../ui/button";
+import { AddBookmarkModal } from "@/components/bookmarks/add-bookmark-modal";
+import { ChangeTagsModal } from "@/components/bookmarks/add-tags-modal";
+import { DeleteAccountModal } from "@/components/sidebar/delete-account-modal";
+import { MobileSidebar } from "@/components/sidebar/mobile-sidebar";
+import { SidebarDropdown } from "@/components/sidebar/sidebar-dropdown";
+import { Button } from "@/components/ui/button";
 import Image from "next/image";
-import { SignOut } from "../sidebar/sign-out";
+import { SignOut } from "@/components/sidebar/sign-out";
 
 export async function ModalProvider() {
   const session = await auth();

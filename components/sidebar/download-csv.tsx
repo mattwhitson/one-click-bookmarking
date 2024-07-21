@@ -2,7 +2,7 @@
 
 import { mkConfig, generateCsv, download } from "export-to-csv";
 import { File } from "lucide-react";
-import { Button } from "../ui/button";
+import { Button } from "@/components/ui/button";
 import { client } from "@/lib/hono";
 
 const csvConfig = mkConfig({

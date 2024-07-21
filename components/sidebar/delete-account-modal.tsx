@@ -1,5 +1,8 @@
 "use client";
 
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -10,9 +13,6 @@ import {
 import { ModalTypes, useModalStore } from "@/hooks/modal-store";
 import { Button } from "@/components/ui/button";
 import { client } from "@/lib/hono";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
 
 export function DeleteAccountModal() {
   const { data: session } = useSession();

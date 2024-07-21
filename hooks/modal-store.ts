@@ -1,4 +1,3 @@
-import { Tag } from "@/app/api/[[...route]]/bookmarks";
 import { Bookmark } from "@/components/bookmarks/card";
 import { create } from "zustand";
 

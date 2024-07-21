@@ -7,9 +7,8 @@ import { cleanUpUrl } from "@/lib/utils";
 import { db } from "@/db";
 import { bookmarks, bookmarksToTags, tags } from "@/db/schema";
 import { newBookmarkSchema } from "@/lib/zod-schemas";
-import { auth, authenticateUser } from "@/auth";
-import { and, asc, count, desc, eq, ilike, lt, or, sql } from "drizzle-orm";
-import { title } from "process";
+import { authenticateUser } from "@/auth";
+import { and, count, desc, eq, ilike, lt, or, sql } from "drizzle-orm";
 
 export interface Tag {
   id: number;
@@ -389,9 +388,6 @@ const app = new Hono()
       }
     }
   )
-  //TODO: change schema and make it a cascade delete for this bad boy and also for tags,
-  // because right now i can't delete them without deleting all the rows in the child table
-  // connecting bookmarks and tags
   .delete(
     "/:bookmarkId",
     validator("param", (value, c) => {

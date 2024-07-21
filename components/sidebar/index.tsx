@@ -1,13 +1,12 @@
 import Link from "next/link";
-import { File, HomeIcon, Plus, Search, Star } from "lucide-react";
+import { HomeIcon, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SignOut } from "@/components/sidebar/sign-out";
 import { AddBookmarkButton } from "@/components/sidebar/add-bookmark-button";
 import { auth } from "@/auth";
 import Image from "next/image";
 import { SidebarDropdown } from "./sidebar-dropdown";
-import { client } from "@/lib/hono";
-import { DownloadCsv } from "./download-csv";
+import { DownloadCsv } from "@/components/sidebar/download-csv";
 
 export async function Sidebar() {
   const session = await auth();

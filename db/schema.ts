@@ -1,33 +1,4 @@
-// import { relations } from "drizzle-orm";
-// import { integer, pgTable, serial, text, boolean } from "drizzle-orm/pg-core";
-
-// export const usersTable = pgTable("users", {
-//   id: serial("id").primaryKey(),
-//   userId: text("user_id").notNull(),
-//   name: text("name").notNull(),
-//   image: text("image").notNull(),
-//   email: text("email").notNull().unique(),
-// });
-
-// export const usersRelations = relations(usersTable, ({ many }) => ({
-//   posts: many(bookmarkTable),
-// }));
-
-// export const bookmarkTable = pgTable(, {
-//   id: serial("id").primaryKey(),
-//   categories: text("category"),
-//   url: text("url").notNull(),
-//   favorite: boolean("boolean").notNull().default(false),
-//   userId: integer("id")
-//     .notNull()
-//     .references(() => usersTable.id),
-// });
-
-// export const postsRelations = relations(bookmarkTable, ({ one }) => ({
-//   user: one(usersTable),
-// }));
-
-import { relations, sql } from "drizzle-orm";
+import { relations } from "drizzle-orm";
 import {
   boolean,
   timestamp,
