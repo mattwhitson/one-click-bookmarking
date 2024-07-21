@@ -15,18 +15,10 @@ export function SignOut({ session }: Props) {
           "use server";
           await signOut({ redirectTo: "/" });
         }}
+        className="w-full"
       >
-        <Button
-          className="rounded-full relative p-0 h-10 w-10 mt-auto"
-          type="submit"
-        >
-          <Image
-            src={session.user?.image ?? "/Bookmark-dynamic-gradient.png"}
-            alt="user profile pciture"
-            className="absolute object-fill rounded-full"
-            width={48}
-            height={48}
-          />
+        <Button className="w-full" type="submit">
+          Sign out
         </Button>
       </form>
     )

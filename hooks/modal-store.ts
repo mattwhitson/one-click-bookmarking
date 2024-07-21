@@ -5,6 +5,8 @@ import { create } from "zustand";
 export enum ModalTypes {
   AddBookmark,
   ChangeTag,
+  DeleteAccount,
+  MobileSidebar,
 }
 
 export type BookmarkData = {

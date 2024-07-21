@@ -19,10 +19,13 @@ import { searchSchema } from "@/lib/zod-schemas";
 import { Button } from "../ui/button";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { client } from "@/lib/hono";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useModalStore } from "@/hooks/modal-store";
 
 function useDebounce(searchTerm: string, delay: number) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const searchParmam = searchParams.get("search");
   const [search, setSearch] = useState("");
 
   useEffect(() => {
@@ -33,7 +36,7 @@ function useDebounce(searchTerm: string, delay: number) {
     const timeoutId = setTimeout(() => {
       setSearch(searchTerm);
       if (searchTerm !== "") router.push(`/bookmarks?search=${searchTerm}`);
-      else router.push("/bookmarks");
+      else if (searchParmam) router.push("/bookmarks");
     }, delay);
 
     return () => clearTimeout(timeoutId);
@@ -46,7 +49,7 @@ function useDebounce(searchTerm: string, delay: number) {
 async function fetchSearchResults(params: any) {
   const [_, search] = params.queryKey;
 
-  const response = await client.api.bookmarks.search.$get({
+  const response = await client.api.bookmarks.$get({
     query: { cursor: String(params.pageParam), searchTerm: search },
   });
 
@@ -75,7 +78,15 @@ const useDebouncedQuery = (
   });
 };
 
-export function SearchBar({ session }: { session: Session }) {
+export function SearchBar({
+  session,
+  width,
+}: {
+  session: Session | null;
+  width?: string;
+}) {
+  const { type, onClose } = useModalStore();
+  const [searchInput, setSearchInput] = useState(""); // only have this use state here because the component would stop detecting the useForm state change for some reason
   const router = useRouter();
   const form = useForm<z.infer<typeof searchSchema>>({
     resolver: zodResolver(searchSchema),
@@ -93,6 +104,7 @@ export function SearchBar({ session }: { session: Session }) {
   );
 
   function onSubmit(values: z.infer<typeof searchSchema>) {
+    if (type) onClose();
     router.push(`/bookmarks?search=${values.searchTerm}`);
   }
 
@@ -102,7 +114,9 @@ export function SearchBar({ session }: { session: Session }) {
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
-            className="hidden translate-y-1 h-fit w-[512px] sm:block relative"
+            className={`mt-8 sm:mt-0 translate-y-1 h-fit sm:w-[512px] sm:block relative ${
+              width && width
+            }`}
           >
             <FormField
               control={form.control}
@@ -114,6 +128,9 @@ export function SearchBar({ session }: { session: Session }) {
                       placeholder="Search..."
                       {...field}
                       className="pr-24"
+                      onChangeCapture={() =>
+                        setSearchInput(form.getValues("searchTerm"))
+                      }
                     />
                   </FormControl>
                   <FormDescription></FormDescription>
@@ -122,7 +139,7 @@ export function SearchBar({ session }: { session: Session }) {
             />
             <Button
               type="submit"
-              className="absolute right-1 w-18 h-8 top-[8%] rounded-sm"
+              className="absolute right-1 w-18 h-8 top-[10%] rounded-sm"
               onClickCapture={(e) => e.stopPropagation()}
             >
               Search

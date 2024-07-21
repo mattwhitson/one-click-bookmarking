@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { SignOut } from "@/components/sidebar/sign-out";
 import { AddBookmarkButton } from "@/components/sidebar/add-bookmark-button";
 import { auth } from "@/auth";
+import Image from "next/image";
+import { SidebarDropdown } from "./sidebar-dropdown";
 
 export async function Sidebar() {
   const session = await auth();
@@ -25,7 +27,26 @@ export async function Sidebar() {
           <File className="w-8 h-8" />
         </Link>
       </Button>
-      <SignOut session={session} />
+      {session && (
+        <SidebarDropdown
+          dropdownTrigger={
+            <Button
+              className="rounded-full relative p-0 h-10 w-10 mt-auto"
+              type="submit"
+            >
+              <Image
+                src={session.user?.image ?? "/Bookmark-dynamic-gradient.png"}
+                alt="user profile pciture"
+                className="absolute object-fill rounded-full"
+                width={48}
+                height={48}
+              />
+            </Button>
+          }
+        >
+          <SignOut session={session} />
+        </SidebarDropdown>
+      )}
     </nav>
   );
 }

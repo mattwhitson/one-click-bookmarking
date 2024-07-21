@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { FiDisc, FiTag } from "react-icons/fi";
 import { BsStar, BsStarFill } from "react-icons/bs";
 import { format } from "date-fns";
@@ -42,7 +42,8 @@ export function Card({ bookmark, allTags }: Props) {
 
   const { onOpen } = useModalStore();
 
-  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const search = searchParams.get("search");
 
   const queryClient = useQueryClient();
 
@@ -62,7 +63,22 @@ export function Card({ bookmark, allTags }: Props) {
     },
     onSuccess: (data) => {
       queryClient.setQueryData(
-        ["userBookmarks", "/bookmarks"],
+        ["userBookmarks", "/bookmarks", search],
+        (prev: InfiniteQueryBookmarks) => ({
+          ...prev,
+          pages: prev.pages.map((page) => ({
+            ...page,
+            bookmarks: page.bookmarks.map((bookmark) =>
+              bookmark.id === data.id
+                ? { ...bookmark, favorite: data.favorite }
+                : { ...bookmark }
+            ),
+          })),
+        })
+      );
+
+      queryClient.setQueryData(
+        ["userBookmarks", "/bookmarks", undefined],
         (prev: InfiniteQueryBookmarks) => ({
           ...prev,
           pages: prev.pages.map((page) => ({
@@ -78,7 +94,7 @@ export function Card({ bookmark, allTags }: Props) {
 
       if (!data.favorite) {
         queryClient.setQueryData(
-          ["userBookmarks", "/favorites"],
+          ["userBookmarks", "/favorites", search],
           (prev: InfiniteQueryBookmarks) => ({
             ...prev,
             pages: prev.pages.map((page) => ({

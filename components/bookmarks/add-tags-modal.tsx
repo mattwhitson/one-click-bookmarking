@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -51,7 +51,8 @@ export function ChangeTagsModal() {
 
   const tags = useGetTags(session?.user?.id);
 
-  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const search = searchParams.get("search");
 
   const { type, isOpen, onClose, data } = useModalStore();
   const isModalOpen = isOpen && type === ModalTypes.ChangeTag;
@@ -62,7 +63,7 @@ export function ChangeTagsModal() {
     if (tags.data === undefined) return;
 
     const result = tags.data?.map((tag) => {
-      for (let i = 0; i < data.bookmark?.tags.length; i++) {
+      for (let i = 0; i < data?.bookmark?.tags.length; i++) {
         if (data.bookmark?.tags[i].id === tag.id) return true;
       }
       return false;
@@ -96,27 +97,31 @@ export function ChangeTagsModal() {
     },
     onSuccess(result, variables) {
       const paths = ["/bookmarks", "/favorites"];
+      const searchParams: (string | null)[] = [search];
+      if (search !== null) searchParams.push(null);
       paths.forEach((path) => {
-        queryClient.setQueryData(
-          ["userBookmarks", path],
-          (prev: InfiniteQueryBookmarks) => ({
-            ...prev,
-            pages: prev?.pages.map((page) => ({
-              ...page,
-              bookmarks: page.bookmarks.map((bookmark) =>
-                bookmark.id === variables.bookmarkId
-                  ? {
-                      ...bookmark,
-                      tags: [
-                        ...bookmark.tags,
-                        { id: result.id, tag: result.tag },
-                      ],
-                    }
-                  : { ...bookmark }
-              ),
-            })),
-          })
-        );
+        searchParams.forEach((param) => {
+          queryClient.setQueryData(
+            ["userBookmarks", path, param],
+            (prev: InfiniteQueryBookmarks) => ({
+              ...prev,
+              pages: prev?.pages.map((page) => ({
+                ...page,
+                bookmarks: page.bookmarks.map((bookmark) =>
+                  bookmark.id === variables.bookmarkId
+                    ? {
+                        ...bookmark,
+                        tags: [
+                          ...bookmark.tags,
+                          { id: result.id, tag: result.tag },
+                        ],
+                      }
+                    : { ...bookmark }
+                ),
+              })),
+            })
+          );
+        });
       });
       queryClient.setQueryData(["tags", session?.user?.id], (prev: Tag[]) => {
         return [...prev, { id: result?.id, tag: result?.tag }];
@@ -154,29 +159,33 @@ export function ChangeTagsModal() {
         const deleted = data.deleted;
         const bookmarkId = data.bookmarkId;
         const paths = ["/bookmarks", "/favorites"];
+        const searchParams: (string | null)[] = [search];
+        if (search !== null) searchParams.push(null);
         paths.forEach((path) => {
-          queryClient.setQueryData(
-            ["userBookmarks", path],
-            (prev: InfiniteQueryBookmarks) => ({
-              ...prev,
-              pages: prev.pages.map((page) => ({
-                ...page,
-                bookmarks: page.bookmarks.map((bookmark) =>
-                  bookmark.id === bookmarkId
-                    ? {
-                        ...bookmark,
-                        tags: [
-                          ...bookmark.tags.filter(
-                            (tag) => !deleted?.includes(tag.id)
-                          ),
-                          ...added,
-                        ],
-                      }
-                    : { ...bookmark }
-                ),
-              })),
-            })
-          );
+          searchParams.forEach((param) => {
+            queryClient.setQueryData(
+              ["userBookmarks", path, param],
+              (prev: InfiniteQueryBookmarks) => ({
+                ...prev,
+                pages: prev.pages.map((page) => ({
+                  ...page,
+                  bookmarks: page.bookmarks.map((bookmark) =>
+                    bookmark.id === bookmarkId
+                      ? {
+                          ...bookmark,
+                          tags: [
+                            ...bookmark.tags.filter(
+                              (tag) => !deleted?.includes(tag.id)
+                            ),
+                            ...added,
+                          ],
+                        }
+                      : { ...bookmark }
+                  ),
+                })),
+              })
+            );
+          });
         });
       },
     });

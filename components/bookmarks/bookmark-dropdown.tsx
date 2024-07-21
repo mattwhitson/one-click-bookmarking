@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { FiMoreHorizontal } from "react-icons/fi";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,6 +28,9 @@ export function BookmarkDropdown({ bookmark, tags }: Props) {
   const { onOpen } = useModalStore();
   const queryClient = useQueryClient();
 
+  const searchParams = useSearchParams();
+  const search = searchParams.get("search");
+
   const { mutate: deleteMutation, isPending: deleteIsPending } = useMutation({
     mutationFn: async (bookmarkId: number) => {
       const res = await client.api.bookmarks[":bookmarkId"].$delete({
@@ -47,7 +50,7 @@ export function BookmarkDropdown({ bookmark, tags }: Props) {
       const paths = ["/bookmarks", "/favorites"];
       paths.forEach((path) => {
         queryClient.setQueryData(
-          ["userBookmarks", path], // TODO: change back to bookmarks since the problem has been solved
+          ["userBookmarks", path, search], // TODO: change back to bookmarks since the problem has been solved
           (prev: InfiniteQueryBookmarks) => {
             const result = prev?.pages.map((page) => ({
               ...page,
@@ -76,7 +79,6 @@ export function BookmarkDropdown({ bookmark, tags }: Props) {
         >
           Add tag
         </DropdownMenuItem>
-        <DropdownMenuItem>Favorite</DropdownMenuItem>
         <DropdownMenuItem onClick={() => deleteMutation(bookmark.id)}>
           Delete
         </DropdownMenuItem>

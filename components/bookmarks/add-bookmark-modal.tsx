@@ -36,7 +36,6 @@ export function AddBookmarkModal() {
   const queryClient = useQueryClient();
   const pathname = usePathname();
   const isModalOpen = isOpen && type === ModalTypes.AddBookmark;
-
   const form = useForm<z.infer<typeof newBookmarkSchema>>({
     resolver: zodResolver(newBookmarkSchema),
     defaultValues: {
@@ -64,7 +63,7 @@ export function AddBookmarkModal() {
         const bookmark = { ...data.bookmark, tags: [] as Tag[] };
         const metadata = { ...data.metadata };
         queryClient.setQueryData(
-          ["userBookmarks", pathname],
+          ["userBookmarks", pathname, undefined],
           (prev: InfiniteQueryBookmarks) => ({
             ...prev,
             pages: prev.pages.map((page, index) =>
