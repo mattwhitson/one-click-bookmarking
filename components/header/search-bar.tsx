@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -12,71 +12,13 @@ import {
   FormDescription,
   FormField,
   FormItem,
-  FormLabel,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { searchSchema } from "@/lib/zod-schemas";
 import { Button } from "../ui/button";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { client } from "@/lib/hono";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useModalStore } from "@/hooks/modal-store";
-
-function useDebounce(searchTerm: string, delay: number) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const searchParmam = searchParams.get("search");
-  const [search, setSearch] = useState("");
-
-  useEffect(() => {
-    setSearch(searchTerm);
-  }, [searchTerm, router]);
-
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      setSearch(searchTerm);
-      if (searchTerm !== "") router.push(`/bookmarks?search=${searchTerm}`);
-      else if (searchParmam) router.push("/bookmarks");
-    }, delay);
-
-    return () => clearTimeout(timeoutId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search]);
-
-  return search;
-}
-
-async function fetchSearchResults(params: any) {
-  const [_, search] = params.queryKey;
-
-  const response = await client.api.bookmarks.$get({
-    query: { cursor: String(params.pageParam), searchTerm: search },
-  });
-
-  if (!response.ok) {
-    throw new Error("Failed to fetch your tags!");
-  }
-
-  const { bookmarks, cursor } = await response.json();
-
-  return { bookmarks, cursor };
-}
-
-const useDebouncedQuery = (
-  searchTerm: string,
-  queryFn: (...args: any[]) => any,
-  delay: number
-) => {
-  const search = useDebounce(searchTerm, delay);
-  return useInfiniteQuery({
-    queryKey: ["userBookmarks", "/bookmarks", search],
-    queryFn: fetchSearchResults,
-    initialPageParam: undefined,
-    getNextPageParam: (lastPage) => lastPage?.cursor,
-    refetchInterval: false,
-    enabled: searchTerm !== "",
-  });
-};
+import { useDebouncedQuery } from "@/hooks/use-debounced-query";
 
 export function SearchBar({
   session,
@@ -99,7 +41,6 @@ export function SearchBar({
     form.getFieldState("searchTerm").invalid
       ? ""
       : form.getValues("searchTerm"),
-    fetchSearchResults,
     1000
   );
 

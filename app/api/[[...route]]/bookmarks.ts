@@ -268,6 +268,37 @@ const app = new Hono()
       }
     }
   )
+  .get("/all", async (c) => {
+    const userId = await authenticateUser();
+    try {
+      const data = await db
+        .select({
+          url: bookmarks.url,
+          title: bookmarks.title,
+          description: bookmarks.description,
+          favorite: bookmarks.favorite,
+          imageUrl: bookmarks.imageUrl,
+        })
+        .from(bookmarks)
+        .where(eq(bookmarks.userId, userId))
+        .groupBy(bookmarks.id)
+        .orderBy(desc(bookmarks.createdAt));
+
+      for (const bookmark of data) {
+        const meta = await getMetadata(bookmark.url);
+        bookmark.title = meta.title;
+        bookmark.description = meta.description;
+        bookmark.imageUrl = meta.image;
+      }
+
+      return c.json({
+        bookmarks: data,
+      });
+    } catch (error) {
+      console.log(error);
+      throw new HTTPException(500, { message: "Database Error" });
+    }
+  })
   .post("/", zValidator("json", newBookmarkSchema), async (c) => {
     let { url } = c.req.valid("json");
 

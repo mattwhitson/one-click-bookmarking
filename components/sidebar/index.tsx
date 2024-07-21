@@ -6,6 +6,8 @@ import { AddBookmarkButton } from "@/components/sidebar/add-bookmark-button";
 import { auth } from "@/auth";
 import Image from "next/image";
 import { SidebarDropdown } from "./sidebar-dropdown";
+import { client } from "@/lib/hono";
+import { DownloadCsv } from "./download-csv";
 
 export async function Sidebar() {
   const session = await auth();
@@ -22,11 +24,7 @@ export async function Sidebar() {
           <Star className="w-8 h-8" />
         </Link>
       </Button>
-      <Button asChild variant="ghost" className="h-12 w-12 p-0">
-        <Link href="/export">
-          <File className="w-8 h-8" />
-        </Link>
-      </Button>
+      <DownloadCsv />
       {session && (
         <SidebarDropdown
           dropdownTrigger={
