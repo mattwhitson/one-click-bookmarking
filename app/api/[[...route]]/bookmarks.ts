@@ -90,79 +90,27 @@ const app = new Hono()
         : desc(bookmarks.createdAt);
 
     try {
-      let data: BookmarksWithTags[];
-      if (searchTerm) {
-        data = await db
-          .select({
-            id: bookmarks.id,
-            url: bookmarks.url,
-            favorite: bookmarks.favorite,
-            createdAt: bookmarks.createdAt,
-            tags: sql<
-              Tag[]
-            >`json_agg(json_build_object('id', ${tags.id}, 'tag', ${tags.tag}))`,
-            title: bookmarks.title,
-            imageUrl: bookmarks.imageUrl,
-            description: bookmarks.description,
-            lastUpdated: bookmarks.lastUpdated,
-          })
-          .from(bookmarks)
-          .leftJoin(
-            bookmarksToTags,
-            eq(bookmarks.id, bookmarksToTags.bookmarkId)
-          )
-          .leftJoin(tags, eq(tags.id, bookmarksToTags.tagId))
-          .where(whereClause)
-          .limit(BOOKMARK_BATCH_SIZE)
-          .groupBy(bookmarks.id)
-          .orderBy(orderByClause);
-      } else {
-        data = await db
-          .select({
-            id: bookmarks.id,
-            url: bookmarks.url,
-            favorite: bookmarks.favorite,
-            createdAt: bookmarks.createdAt,
-            tags: sql<
-              Tag[]
-            >`json_agg(json_build_object('id', ${tags.id}, 'tag', ${tags.tag}))`,
-            title: bookmarks.title,
-            imageUrl: bookmarks.imageUrl,
-            description: bookmarks.description,
-            lastUpdated: bookmarks.lastUpdated,
-          })
-          .from(bookmarks)
-          .leftJoin(
-            bookmarksToTags,
-            eq(bookmarks.id, bookmarksToTags.bookmarkId)
-          )
-          .leftJoin(tags, eq(tags.id, bookmarksToTags.tagId))
-          .where(
-            and(
-              and(
-                or(
-                  or(
-                    or(
-                      ilike(bookmarks.url, `%${searchTerm}%`),
-                      ilike(bookmarks.title, `%${searchTerm}%`)
-                    ),
-                    ilike(bookmarks.description, `%${searchTerm}%`)
-                  ),
-                  and(
-                    ilike(tags.tag, `%${searchTerm}%`),
-                    eq(tags.userId, userId)
-                  )
-                ),
-                eq(bookmarks.userId, userId)
-              ),
-              cursor ? lt(bookmarks.id, cursor) : undefined
-            )
-          )
-          .limit(BOOKMARK_BATCH_SIZE)
-          .groupBy(bookmarks.id)
-          .orderBy(desc(bookmarks.createdAt));
-        console.log(data);
-      }
+      const data = await db
+        .select({
+          id: bookmarks.id,
+          url: bookmarks.url,
+          favorite: bookmarks.favorite,
+          createdAt: bookmarks.createdAt,
+          tags: sql<
+            Tag[]
+          >`json_agg(json_build_object('id', ${tags.id}, 'tag', ${tags.tag}))`,
+          title: bookmarks.title,
+          imageUrl: bookmarks.imageUrl,
+          description: bookmarks.description,
+          lastUpdated: bookmarks.lastUpdated,
+        })
+        .from(bookmarks)
+        .leftJoin(bookmarksToTags, eq(bookmarks.id, bookmarksToTags.bookmarkId))
+        .leftJoin(tags, eq(tags.id, bookmarksToTags.tagId))
+        .where(whereClause)
+        .limit(BOOKMARK_BATCH_SIZE)
+        .groupBy(bookmarks.id)
+        .orderBy(orderByClause);
 
       for (const bookmark of data) {
         if (bookmark.tags[0].id === null) bookmark.tags = [];
@@ -431,7 +379,7 @@ const app = new Hono()
           .values({ userId: userId, count: 1 });
       }
 
-      return c.json({ bookmark: bookmark[0], metadata }, 200);
+      return c.json({ bookmark: bookmark[0] }, 200);
     } catch (error) {
       console.log(error);
       throw new HTTPException(500, { message: "Database Error" });

@@ -27,14 +27,27 @@ export function useGetBookmarks(
     return { bookmarks, cursor };
   };
 
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status } =
-    useInfiniteQuery({
-      queryKey: ["userBookmarks", filter, searchTerm],
-      queryFn: fetchBookmarks,
-      initialPageParam: undefined,
-      getNextPageParam: (lastPage) => lastPage?.cursor,
-      refetchInterval: false,
-    });
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    status,
+    isFetching,
+  } = useInfiniteQuery({
+    queryKey: ["userBookmarks", filter, searchTerm],
+    queryFn: fetchBookmarks,
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => lastPage?.cursor,
+    refetchInterval: false,
+  });
 
-  return { data, fetchNextPage, hasNextPage, isFetchingNextPage, status };
+  return {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    status,
+    isFetching,
+  };
 }

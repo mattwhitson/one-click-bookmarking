@@ -29,7 +29,8 @@ export function BookmarkDropdown({ bookmark, tags }: Props) {
   const queryClient = useQueryClient();
 
   const searchParams = useSearchParams();
-  const search = searchParams.get("search");
+  const searchParam = searchParams.get("search") || undefined;
+  const filterParam = searchParams.get("filter") || undefined;
 
   const { mutate: deleteMutation, isPending: deleteIsPending } = useMutation({
     mutationFn: async (bookmarkId: number) => {
@@ -45,21 +46,16 @@ export function BookmarkDropdown({ bookmark, tags }: Props) {
       }
     },
     onSuccess(res, bookmarkId) {
-      const paths = ["/bookmarks", "/favorites"];
-      paths.forEach((path) => {
-        queryClient.setQueryData(
-          ["userBookmarks", path, search],
-          (prev: InfiniteQueryBookmarks) => {
-            const result = prev?.pages.map((page) => ({
-              ...page,
-              bookmarks: page.bookmarks.filter(
-                (post) => post.id !== bookmarkId
-              ),
-            }));
-            return { ...prev, pages: result };
-          }
-        );
-      });
+      queryClient.setQueryData(
+        ["userBookmarks", filterParam, searchParam],
+        (prev: InfiniteQueryBookmarks) => {
+          const result = prev?.pages.map((page) => ({
+            ...page,
+            bookmarks: page.bookmarks.filter((post) => post.id !== bookmarkId),
+          }));
+          return { ...prev, pages: result };
+        }
+      );
     },
   });
   return (

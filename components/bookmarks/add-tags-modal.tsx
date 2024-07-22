@@ -48,8 +48,8 @@ export function ChangeTagsModal() {
   const tags = useGetTags(session?.user?.id);
 
   const searchParams = useSearchParams();
-  const search = searchParams.get("search");
-
+  const searchParam = searchParams.get("search") || undefined;
+  const filterParam = searchParams.get("filter") || undefined;
   const { type, isOpen, onClose, data } = useModalStore();
   const isModalOpen = isOpen && type === ModalTypes.ChangeTag;
 
@@ -92,41 +92,31 @@ export function ChangeTagsModal() {
       throw error; // why am i throwing here?
     },
     onSuccess(result, variables) {
-      const paths = ["/bookmarks", "/favorites"];
-      const searchParams: (string | undefined)[] = [search || undefined];
-      if (search !== null) searchParams.push(undefined);
+      queryClient.setQueryData(
+        ["userBookmarks", filterParam, searchParam],
+        (prev: InfiniteQueryBookmarks) => ({
+          ...prev,
+          pages: prev?.pages.map((page) => ({
+            ...page,
+            bookmarks: page.bookmarks.map((bookmark) =>
+              bookmark.id === variables.bookmarkId
+                ? {
+                    ...bookmark,
+                    tags: [
+                      ...bookmark.tags,
+                      { id: result.id, tag: result.tag },
+                    ],
+                  }
+                : { ...bookmark }
+            ),
+          })),
+        })
+      );
 
-      paths.forEach((path) => {
-        searchParams.forEach((param) => {
-          queryClient.setQueryData(
-            ["userBookmarks", path, param],
-            (prev: InfiniteQueryBookmarks) => {
-              if (prev === undefined) return undefined;
-              const res = {
-                ...prev,
-                pages: prev?.pages.map((page) => ({
-                  ...page,
-                  bookmarks: page.bookmarks.map((bookmark) =>
-                    bookmark.id === variables.bookmarkId
-                      ? {
-                          ...bookmark,
-                          tags: [
-                            ...bookmark.tags,
-                            { id: result.id, tag: result.tag },
-                          ],
-                        }
-                      : { ...bookmark }
-                  ),
-                })),
-              };
-              return res;
-            }
-          );
-        });
-      });
       queryClient.setQueryData(["tags", session?.user?.id], (prev: Tag[]) => {
         return [...prev, { id: result?.id, tag: result?.tag }];
       });
+      // TODO: should probably just fetch bookmaarks like i do for the tags
       // kind of hacky, should think of a better way of doing this (maybe should make a useQuery for each bookmark id? then i wouldn't need to pass in the data object from useModalState)
       data.bookmark.tags.push({ id: result?.id, tag: result?.tag });
     },
@@ -160,39 +150,28 @@ export function ChangeTagsModal() {
         const deleted = result.deleted;
         const bookmarkId = result.bookmarkId;
 
-        const paths = ["/bookmarks", "/favorites"];
-        const searchParams: (string | undefined)[] = [search || undefined];
-        if (search !== null) searchParams.push(undefined);
-
-        paths.forEach((path) => {
-          searchParams.forEach((param) => {
-            queryClient.setQueryData(
-              ["userBookmarks", path, param],
-              (prev: InfiniteQueryBookmarks) => {
-                if (prev === undefined) return undefined;
-                return {
-                  ...prev,
-                  pages: prev.pages.map((page) => ({
-                    ...page,
-                    bookmarks: page.bookmarks.map((bookmark) =>
-                      bookmark.id === bookmarkId
-                        ? {
-                            ...bookmark,
-                            tags: [
-                              ...bookmark.tags.filter(
-                                (tag) => !deleted?.includes(tag.id)
-                              ),
-                              ...added,
-                            ],
-                          }
-                        : { ...bookmark }
-                    ),
-                  })),
-                };
-              }
-            );
-          });
-        });
+        queryClient.setQueryData(
+          ["userBookmarks", filterParam, searchParam],
+          (prev: InfiniteQueryBookmarks) => ({
+            ...prev,
+            pages: prev.pages.map((page) => ({
+              ...page,
+              bookmarks: page.bookmarks.map((bookmark) =>
+                bookmark.id === bookmarkId
+                  ? {
+                      ...bookmark,
+                      tags: [
+                        ...bookmark.tags.filter(
+                          (tag) => !deleted?.includes(tag.id)
+                        ),
+                        ...added,
+                      ],
+                    }
+                  : { ...bookmark }
+              ),
+            })),
+          })
+        );
 
         data.bookmark.tags = [
           ...data.bookmark.tags.filter((tag) => !deleted?.includes(tag.id)),

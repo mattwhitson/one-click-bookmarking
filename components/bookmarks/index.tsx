@@ -45,8 +45,14 @@ export function Bookmarks({ filter, searchTerm, userId }: Props) {
     });
   }, [searchParams, queryClient, searchTerm, filter]);
 
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status } =
-    useGetBookmarks(filter, searchTerm);
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    status,
+    isFetching,
+  } = useGetBookmarks(filter, searchTerm);
 
   const allTags = useGetTags(userId);
 
@@ -83,6 +89,9 @@ export function Bookmarks({ filter, searchTerm, userId }: Props) {
     return () => window.removeEventListener("scroll", handleScroll, true);
   }, [fetchNextPage, hasNextPage, isFetchingNextPage, data]);
 
+  // should we add isFetching here? probably, even though it means theres a loading bar, because
+  // stuff popping up randomly is arguably a crappier experience than waiting the couple seconds for
+  // the data to load.
   if ((data === undefined && status !== "success") || status === "pending") {
     return <Loader2 className="animate-spin mx-auto mt-16 w-12 h-12" />;
   }

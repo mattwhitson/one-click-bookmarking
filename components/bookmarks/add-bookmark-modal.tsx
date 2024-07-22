@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -34,7 +34,10 @@ import { Tag } from "@/app/api/[[...route]]/bookmarks";
 export function AddBookmarkModal() {
   const { type, isOpen, onClose } = useModalStore();
   const queryClient = useQueryClient();
-  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const searchParam = searchParams.get("search") || undefined;
+  const filterParam = searchParams.get("filter") || undefined;
+
   const isModalOpen = isOpen && type === ModalTypes.AddBookmark;
   const form = useForm<z.infer<typeof newBookmarkSchema>>({
     resolver: zodResolver(newBookmarkSchema),
@@ -54,29 +57,32 @@ export function AddBookmarkModal() {
         const { error } = await res.json();
         console.log(error);
         toast(error);
+        throw error;
       }
     },
 
     // TODO: should i just requery the result or do this? idk, probably should test it later
     onSuccess(data) {
-      if (data !== undefined) {
-        const bookmark = { ...data.bookmark, tags: [] as Tag[] };
-        const metadata = { ...data.metadata };
-        queryClient.setQueryData(
-          ["userBookmarks", pathname, undefined],
-          (prev: InfiniteQueryBookmarks) => ({
-            ...prev,
-            pages: prev.pages.map((page, index) =>
-              index === 0
-                ? {
-                    ...page,
-                    bookmarks: [bookmark, ...page.bookmarks],
-                  }
-                : { ...page }
-            ),
-          })
-        );
-      }
+      console.log(searchParam, filterParam);
+      queryClient.invalidateQueries({
+        queryKey: ["userBookmarks", filterParam, searchParam],
+      });
+
+      // const bookmark = { ...data.bookmark, tags: [] as Tag[] };
+      // queryClient.setQueryData(
+      //   ["userBookmarks", pathname, undefined],
+      //   (prev: InfiniteQueryBookmarks) => ({
+      //     ...prev,
+      //     pages: prev.pages.map((page, index) =>
+      //       index === 0
+      //         ? {
+      //             ...page,
+      //             bookmarks: [bookmark, ...page.bookmarks],
+      //           }
+      //         : { ...page }
+      //     ),
+      //   })
+      // );
     },
   });
 

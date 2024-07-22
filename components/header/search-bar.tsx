@@ -30,15 +30,18 @@ export function SearchBar({
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const { type, onClose } = useModalStore();
   const [searchInput, setSearchInput] = useState(""); // only have this use state here because the component would stop detecting the useForm state change for some reason
+
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
+
   const form = useForm<z.infer<typeof searchSchema>>({
     resolver: zodResolver(searchSchema),
     defaultValues: {
       searchTerm: "",
     },
   });
+
   const { ref, ...rest } = form.register("searchTerm");
 
   useDebouncedQuery(

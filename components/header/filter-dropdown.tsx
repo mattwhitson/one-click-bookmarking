@@ -16,7 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useGetTags } from "@/hooks/use-get-tags";
 import { Loader2 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 interface Props {
   userId: string | undefined;
@@ -27,6 +27,8 @@ export function FilterDropdown({ userId }: Props) {
   const [tagsSelected, setTagsSelected] = useState<boolean[]>([]);
   const tags = useGetTags(userId);
 
+  const searchParams = useSearchParams();
+  const searchParam = searchParams.get("search");
   useEffect(() => {
     setTagsSelected(Array(tags.data?.length).fill(false));
   }, [tags.data?.length]);
@@ -51,21 +53,33 @@ export function FilterDropdown({ userId }: Props) {
         <DropdownMenuItem
           className="hover:cursor-pointer"
           onClick={() => {
-            router.push("/bookmarks");
+            router.push(
+              `/bookmarks${searchParam ? `?search=${searchParam}` : ""}`
+            );
           }} // get rid of this, we can use useQuery hook
         >
           <span>Date (Descending)</span>
         </DropdownMenuItem>
         <DropdownMenuItem
           className="hover:cursor-pointer"
-          onClick={() => router.push("/bookmarks?filter=ascending")}
+          onClick={() =>
+            router.push(
+              `/bookmarks?filter=ascending${
+                searchParam ? `&search=${searchParam}` : ""
+              }`
+            )
+          }
         >
           <span>Date (Ascending)</span>
         </DropdownMenuItem>
 
         <DropdownMenuItem
           onClick={() => {
-            router.push("/bookmarks?filter=favorites");
+            router.push(
+              `/bookmarks?filter=favorites${
+                searchParam ? `&search=${searchParam}` : ""
+              }`
+            );
           }}
           className="hover:cursor-pointer"
         >

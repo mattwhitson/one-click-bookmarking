@@ -41,7 +41,8 @@ export function Card({ bookmark, allTags }: Props) {
   const { onOpen } = useModalStore();
 
   const searchParams = useSearchParams();
-  const search = searchParams.get("search");
+  const searchParam = searchParams.get("search");
+  const filterParam = searchParams.get("filter");
 
   const queryClient = useQueryClient();
 
@@ -60,12 +61,9 @@ export function Card({ bookmark, allTags }: Props) {
       return data;
     },
     onSuccess: (data) => {
-      const searchParams: (string | undefined)[] = [search || undefined];
-      if (search !== null) searchParams.push(undefined);
-
-      searchParams.forEach((param) => {
+      if (filterParam !== "favorites") {
         queryClient.setQueryData(
-          ["userBookmarks", "/bookmarks", param],
+          ["userBookmarks", filterParam, searchParam],
           (prev: InfiniteQueryBookmarks) => ({
             ...prev,
             pages: prev.pages.map((page) => ({
@@ -78,26 +76,24 @@ export function Card({ bookmark, allTags }: Props) {
             })),
           })
         );
-      });
-
-      if (!data.favorite) {
-        queryClient.setQueryData(
-          ["userBookmarks", "/favorites", search],
-          (prev: InfiniteQueryBookmarks) => ({
-            ...prev,
-            pages: prev.pages.map((page) => ({
-              ...page,
-              bookmarks: [
-                ...page.bookmarks.filter((bookmark) => bookmark.id !== data.id),
-              ],
-            })),
-          })
-        );
+      } else {
+        if (!data.favorite) {
+          queryClient.setQueryData(
+            ["userBookmarks", filterParam, searchParam],
+            (prev: InfiniteQueryBookmarks) => ({
+              ...prev,
+              pages: prev.pages.map((page) => ({
+                ...page,
+                bookmarks: [
+                  ...page.bookmarks.filter(
+                    (bookmark) => bookmark.id !== data.id
+                  ),
+                ],
+              })),
+            })
+          );
+        }
       }
-
-      queryClient.invalidateQueries({
-        queryKey: ["userBookmarks", "/favorites"],
-      });
     },
   });
 
