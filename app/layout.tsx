@@ -16,10 +16,12 @@ const font = Poppins({
 
 export const metadata: Metadata = {
   title: "One Click Bookmarking",
-  description: "The one stop shop for all your bookmarking needs!",
+  description:
+    "The one stop shop for all your bookmarking needs! Create, organize, favorite, and share all your favorite webpages in one convenient place.",
   openGraph: {
     title: "One Click Bookmarking",
-    description: "The one stop shop for all your bookmarking needs!",
+    description:
+      "The one stop shop for all your bookmarking needs! Create, organize, favorite, and share all your favorite webpages in one convenient place.",
   },
 };
 
