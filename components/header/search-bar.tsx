@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -27,6 +27,7 @@ export function SearchBar({
   session: Session | null;
   width?: string;
 }) {
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
   const { type, onClose } = useModalStore();
   const [searchInput, setSearchInput] = useState(""); // only have this use state here because the component would stop detecting the useForm state change for some reason
   const router = useRouter();
@@ -36,11 +37,13 @@ export function SearchBar({
       searchTerm: "",
     },
   });
+  const { ref, ...rest } = form.register("searchTerm");
 
   useDebouncedQuery(
     form.getFieldState("searchTerm").invalid
       ? ""
       : form.getValues("searchTerm"),
+    searchInputRef,
     1000
   );
 
@@ -68,6 +71,10 @@ export function SearchBar({
                     <Input
                       placeholder="Search..."
                       {...field}
+                      ref={(e) => {
+                        ref(e);
+                        searchInputRef.current = e;
+                      }}
                       className="pr-24"
                       onChangeCapture={() =>
                         setSearchInput(form.getValues("searchTerm"))

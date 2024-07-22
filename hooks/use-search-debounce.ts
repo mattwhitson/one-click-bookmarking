@@ -1,9 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { MutableRefObject, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 
-export function useSearchDebounce(searchTerm: string, delay: number) {
+export function useSearchDebounce(
+  searchTerm: string,
+  searchInputRef: MutableRefObject<HTMLInputElement | null>,
+  delay: number
+) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const searchParmam = searchParams.get("search");
@@ -15,6 +19,7 @@ export function useSearchDebounce(searchTerm: string, delay: number) {
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
+      if (document.activeElement !== searchInputRef.current) return;
       setSearch(searchTerm);
       if (searchTerm !== "") router.push(`/bookmarks?search=${searchTerm}`);
       else if (searchParmam) router.push("/bookmarks");

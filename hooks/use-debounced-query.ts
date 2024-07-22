@@ -1,5 +1,6 @@
 "use client";
 
+import { MutableRefObject } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { client } from "@/lib/hono";
 import { useSearchDebounce } from "@/hooks/use-search-debounce";
@@ -20,8 +21,12 @@ async function fetchSearchResults(params: any) {
   return { bookmarks, cursor };
 }
 
-export const useDebouncedQuery = (searchTerm: string, delay: number) => {
-  const search = useSearchDebounce(searchTerm, delay);
+export const useDebouncedQuery = (
+  searchTerm: string,
+  searchInputRef: MutableRefObject<HTMLInputElement | null>,
+  delay: number
+) => {
+  const search = useSearchDebounce(searchTerm, searchInputRef, delay);
   return useInfiniteQuery({
     queryKey: ["userBookmarks", "/bookmarks", search],
     queryFn: fetchSearchResults,
