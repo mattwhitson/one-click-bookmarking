@@ -305,7 +305,7 @@ const app = new Hono()
   })
   .post("/", zValidator("json", newBookmarkSchema), async (c) => {
     let { url } = c.req.valid("json");
-
+    console.log(url);
     const userId = await authenticateUser();
 
     if (!url) {
@@ -395,9 +395,10 @@ const app = new Hono()
       metadata.bookmarkId = bookmark[0].id;
 
       if (hasRecentBookmarksRecord) {
+        console.log("Hey");
         await db
           .update(bookmarksRecentlyCreated)
-          .set({ createdAt: sql`${bookmarksRecentlyCreated.createdAt} + 1` })
+          .set({ count: sql`${bookmarksRecentlyCreated.count} + 1` })
           .where(eq(bookmarksRecentlyCreated.userId, userId));
       } else {
         await db

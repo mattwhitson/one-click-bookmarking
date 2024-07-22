@@ -1,9 +1,9 @@
 import { Hono } from "hono";
 import { handle } from "hono/vercel";
+import { HTTPException } from "hono/http-exception";
 import bookmarks from "@/app/api/[[...route]]/bookmarks";
 import tags from "@/app/api/[[...route]]/tags";
 import user from "@/app/api/[[...route]]/user";
-import { HTTPException } from "hono/http-exception";
 
 export const runtime = "edge";
 
@@ -21,6 +21,7 @@ const routes = app
   .route("/bookmarks", bookmarks)
   .route("/tags", tags)
   .route("/user", user);
+
 export const GET = handle(app);
 export const POST = handle(app);
 export const PATCH = handle(app);

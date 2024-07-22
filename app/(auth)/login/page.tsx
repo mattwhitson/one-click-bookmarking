@@ -11,7 +11,7 @@ export default function Login() {
           "use server";
           await signIn("google", { redirectTo: "/bookmarks" });
         }}
-        className="flex flex-col space-y-8 text-center mb-32"
+        className="flex flex-col space-y-8 text-center mb-212"
       >
         <Image
           src="/Bookmark-dynamic-gradient.png"

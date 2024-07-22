@@ -38,7 +38,7 @@ const CARDS = [
 export function Carousel() {
   return (
     <section className="mt-14 sm:mt-28 max-w-[400px] sm:max-w-2xl w-full">
-      <h4 className="text-center text-3xl font-semibold">
+      <h4 className="text-center text-xl sm:text-2xl font-semibold">
         Client Testimonials
       </h4>
       <div

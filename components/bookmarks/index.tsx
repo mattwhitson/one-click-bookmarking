@@ -41,6 +41,19 @@ export function Bookmarks({ searchTerm }: Props) {
   const allTags = useGetTags(session?.user?.id);
 
   useEffect(() => {
+    // In the event the user deletes a bunch of bookmarks at the top of the page
+    if (
+      ref === null ||
+      ref.current === null ||
+      isFetchingNextPage ||
+      !hasNextPage
+    )
+      return;
+    const rect = ref.current.getBoundingClientRect();
+    if (rect.top <= window.innerHeight) {
+      fetchNextPage();
+    }
+
     function handleScroll() {
       if (
         ref === null ||
@@ -58,7 +71,7 @@ export function Bookmarks({ searchTerm }: Props) {
     window.addEventListener("scroll", handleScroll, true);
 
     return () => window.removeEventListener("scroll", handleScroll, true);
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage, data]);
 
   if ((data === undefined && status !== "success") || status === "pending") {
     return <Loader2 className="animate-spin mx-auto mt-16 w-12 h-12" />;

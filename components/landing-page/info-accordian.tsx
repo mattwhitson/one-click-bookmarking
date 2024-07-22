@@ -9,7 +9,7 @@ export function InfoAccordian() {
   return (
     <Accordion type="single" collapsible className="w-full mt-6">
       <AccordionItem value="item-1">
-        <AccordionTrigger className="text-xl">
+        <AccordionTrigger className="text-lg sm:text-xl">
           Mark your favorite links
         </AccordionTrigger>
         <AccordionContent className="font-normal text-base">
@@ -19,7 +19,7 @@ export function InfoAccordian() {
         </AccordionContent>
       </AccordionItem>
       <AccordionItem value="item-2">
-        <AccordionTrigger className="text-xl">
+        <AccordionTrigger className="text-lg sm:text-xl">
           Create custom tags
         </AccordionTrigger>
         <AccordionContent className="font-normal text-base">
@@ -28,13 +28,15 @@ export function InfoAccordian() {
         </AccordionContent>
       </AccordionItem>
       <AccordionItem value="item-3">
-        <AccordionTrigger className="text-xl">Export to CSV</AccordionTrigger>
+        <AccordionTrigger className="text-lg sm:text-xl">
+          Export to CSV
+        </AccordionTrigger>
         <AccordionContent className="font-normal text-base">
           Save your bookmarks to a CSV file in seconds.
         </AccordionContent>
       </AccordionItem>
       <AccordionItem value="item-4">
-        <AccordionTrigger className="text-xl">
+        <AccordionTrigger className="text-lg sm:text-xl">
           A generous daily limit
         </AccordionTrigger>
         <AccordionContent className="font-normal text-base">
@@ -45,7 +47,9 @@ export function InfoAccordian() {
         </AccordionContent>
       </AccordionItem>
       <AccordionItem value="item-5">
-        <AccordionTrigger className="text-xl">Privacy</AccordionTrigger>
+        <AccordionTrigger className="text-lg sm:text-xl">
+          Privacy
+        </AccordionTrigger>
         <AccordionContent className="font-normal text-base">
           To make things clear, we don&apos;t sell your data to anyone. And, if
           you decide to delete your account, all your bookmarks and user
@@ -53,7 +57,7 @@ export function InfoAccordian() {
         </AccordionContent>
       </AccordionItem>
       <AccordionItem value="item-6">
-        <AccordionTrigger className="text-xl">
+        <AccordionTrigger className="text-lg sm:text-xl">
           And did we mention...
         </AccordionTrigger>
         <AccordionContent className="font-normal text-base">
