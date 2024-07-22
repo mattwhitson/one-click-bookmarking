@@ -13,7 +13,7 @@ import {
 } from "@/db/schema";
 import { newBookmarkSchema } from "@/lib/zod-schemas";
 import { authenticateUser } from "@/auth";
-import { and, count, desc, eq, ilike, lt, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, ilike, lt, or, sql } from "drizzle-orm";
 
 export interface Tag {
   id: number;
@@ -43,143 +43,168 @@ export interface Metadata {
 const BOOKMARK_BATCH_SIZE = 5;
 
 const app = new Hono()
-  .get(
-    "/",
-    validator("query", (value, c) => {
-      const cursor = value["cursor"];
-      const searchTerm = value["searchTerm"];
-      return {
-        cursor,
-        searchTerm,
-      };
-    }),
-    async (c) => {
-      const userId = await authenticateUser();
-      const cursor = Number(c.req.query("cursor"));
-      const searchTerm = String(c.req.query("searchTerm"));
+  .get("/", async (c) => {
+    const userId = await authenticateUser();
 
-      try {
-        let data: BookmarksWithTags[];
-        if (searchTerm === "undefined") {
-          data = await db
-            .select({
-              id: bookmarks.id,
-              url: bookmarks.url,
-              favorite: bookmarks.favorite,
-              createdAt: bookmarks.createdAt,
-              tags: sql<
-                Tag[]
-              >`json_agg(json_build_object('id', ${tags.id}, 'tag', ${tags.tag}))`,
-              title: bookmarks.title,
-              imageUrl: bookmarks.imageUrl,
-              description: bookmarks.description,
-              lastUpdated: bookmarks.lastUpdated,
-            })
-            .from(bookmarks)
-            .leftJoin(
-              bookmarksToTags,
-              eq(bookmarks.id, bookmarksToTags.bookmarkId)
-            )
-            .leftJoin(tags, eq(tags.id, bookmarksToTags.tagId))
-            .where(
+    const cursor = Number(c.req.query("cursor"));
+    const filter = String(c.req.query("filter"));
+    const searchTerm = String(c.req.query("searchTerm"));
+    console.log(searchTerm, filter);
+    const filterClause =
+      filter === "favorites"
+        ? and(
+            cursor ? lt(bookmarks.id, cursor) : undefined,
+            eq(bookmarks.favorite, true)
+          )
+        : filter === "ascending"
+        ? cursor
+          ? gt(bookmarks.id, cursor)
+          : undefined
+        : cursor
+        ? lt(bookmarks.id, cursor)
+        : undefined;
+
+    const whereClause =
+      searchTerm !== "undefined"
+        ? and(
+            and(
+              or(
+                or(
+                  or(
+                    ilike(bookmarks.url, `%${searchTerm}%`),
+                    ilike(bookmarks.title, `%${searchTerm}%`)
+                  ),
+                  ilike(bookmarks.description, `%${searchTerm}%`)
+                ),
+                and(ilike(tags.tag, `%${searchTerm}%`), eq(tags.userId, userId))
+              ),
+              eq(bookmarks.userId, userId)
+            ),
+            filterClause
+          )
+        : and(eq(bookmarks.userId, userId), filterClause);
+
+    const orderByClause =
+      filter === "ascending"
+        ? asc(bookmarks.createdAt)
+        : desc(bookmarks.createdAt);
+
+    try {
+      let data: BookmarksWithTags[];
+      if (searchTerm) {
+        data = await db
+          .select({
+            id: bookmarks.id,
+            url: bookmarks.url,
+            favorite: bookmarks.favorite,
+            createdAt: bookmarks.createdAt,
+            tags: sql<
+              Tag[]
+            >`json_agg(json_build_object('id', ${tags.id}, 'tag', ${tags.tag}))`,
+            title: bookmarks.title,
+            imageUrl: bookmarks.imageUrl,
+            description: bookmarks.description,
+            lastUpdated: bookmarks.lastUpdated,
+          })
+          .from(bookmarks)
+          .leftJoin(
+            bookmarksToTags,
+            eq(bookmarks.id, bookmarksToTags.bookmarkId)
+          )
+          .leftJoin(tags, eq(tags.id, bookmarksToTags.tagId))
+          .where(whereClause)
+          .limit(BOOKMARK_BATCH_SIZE)
+          .groupBy(bookmarks.id)
+          .orderBy(orderByClause);
+      } else {
+        data = await db
+          .select({
+            id: bookmarks.id,
+            url: bookmarks.url,
+            favorite: bookmarks.favorite,
+            createdAt: bookmarks.createdAt,
+            tags: sql<
+              Tag[]
+            >`json_agg(json_build_object('id', ${tags.id}, 'tag', ${tags.tag}))`,
+            title: bookmarks.title,
+            imageUrl: bookmarks.imageUrl,
+            description: bookmarks.description,
+            lastUpdated: bookmarks.lastUpdated,
+          })
+          .from(bookmarks)
+          .leftJoin(
+            bookmarksToTags,
+            eq(bookmarks.id, bookmarksToTags.bookmarkId)
+          )
+          .leftJoin(tags, eq(tags.id, bookmarksToTags.tagId))
+          .where(
+            and(
               and(
-                eq(bookmarks.userId, userId),
-                cursor ? lt(bookmarks.id, cursor) : undefined
-              )
-            )
-            .limit(BOOKMARK_BATCH_SIZE)
-            .groupBy(bookmarks.id)
-            .orderBy(desc(bookmarks.createdAt));
-        } else {
-          data = await db
-            .select({
-              id: bookmarks.id,
-              url: bookmarks.url,
-              favorite: bookmarks.favorite,
-              createdAt: bookmarks.createdAt,
-              tags: sql<
-                Tag[]
-              >`json_agg(json_build_object('id', ${tags.id}, 'tag', ${tags.tag}))`,
-              title: bookmarks.title,
-              imageUrl: bookmarks.imageUrl,
-              description: bookmarks.description,
-              lastUpdated: bookmarks.lastUpdated,
-            })
-            .from(bookmarks)
-            .leftJoin(
-              bookmarksToTags,
-              eq(bookmarks.id, bookmarksToTags.bookmarkId)
-            )
-            .leftJoin(tags, eq(tags.id, bookmarksToTags.tagId))
-            .where(
-              and(
-                and(
+                or(
                   or(
                     or(
-                      or(
-                        ilike(bookmarks.url, `%${searchTerm}%`),
-                        ilike(bookmarks.title, `%${searchTerm}%`)
-                      ),
-                      ilike(bookmarks.description, `%${searchTerm}%`)
+                      ilike(bookmarks.url, `%${searchTerm}%`),
+                      ilike(bookmarks.title, `%${searchTerm}%`)
                     ),
-                    and(
-                      ilike(tags.tag, `%${searchTerm}%`),
-                      eq(tags.userId, userId)
-                    )
+                    ilike(bookmarks.description, `%${searchTerm}%`)
                   ),
-                  eq(bookmarks.userId, userId)
+                  and(
+                    ilike(tags.tag, `%${searchTerm}%`),
+                    eq(tags.userId, userId)
+                  )
                 ),
-                cursor ? lt(bookmarks.id, cursor) : undefined
-              )
+                eq(bookmarks.userId, userId)
+              ),
+              cursor ? lt(bookmarks.id, cursor) : undefined
             )
-            .limit(BOOKMARK_BATCH_SIZE)
-            .groupBy(bookmarks.id)
-            .orderBy(desc(bookmarks.createdAt));
-          console.log(data);
-        }
-
-        for (const bookmark of data) {
-          if (bookmark.tags[0].id === null) bookmark.tags = [];
-        }
-
-        let nextCursor = undefined;
-        if (data.length === BOOKMARK_BATCH_SIZE) {
-          nextCursor = data[BOOKMARK_BATCH_SIZE - 1].id;
-        }
-
-        // we'll try to update the metadata 3 days after the last time it was updated
-        for (const bookmark of data) {
-          if (
-            !bookmark.lastUpdated ||
-            Date.now() - bookmark.lastUpdated.getTime() > 1000 * 3600 * 72
-          ) {
-            const meta = await getMetadata(bookmark.url);
-            bookmark.title = meta.title;
-            bookmark.description = meta.description;
-            bookmark.imageUrl = meta.image;
-
-            await db
-              .update(bookmarks)
-              .set({
-                title: bookmark.title,
-                description: bookmark.description,
-                imageUrl: bookmark.imageUrl,
-                lastUpdated: sql`now()`,
-              })
-              .where(eq(bookmarks.id, bookmark.id));
-          }
-        }
-
-        return c.json({
-          bookmarks: data,
-          cursor: nextCursor,
-        });
-      } catch (error) {
-        console.log(error);
-        throw new HTTPException(500, { message: "Database Error" });
+          )
+          .limit(BOOKMARK_BATCH_SIZE)
+          .groupBy(bookmarks.id)
+          .orderBy(desc(bookmarks.createdAt));
+        console.log(data);
       }
+
+      for (const bookmark of data) {
+        if (bookmark.tags[0].id === null) bookmark.tags = [];
+      }
+
+      let nextCursor = undefined;
+      if (data.length === BOOKMARK_BATCH_SIZE) {
+        nextCursor = data[BOOKMARK_BATCH_SIZE - 1].id;
+      }
+
+      // we'll try to update the metadata 3 days after the last time it was updated
+      for (const bookmark of data) {
+        if (
+          !bookmark.lastUpdated ||
+          Date.now() - bookmark.lastUpdated.getTime() > 1000 * 3600 * 72
+        ) {
+          const meta = await getMetadata(bookmark.url);
+          bookmark.title = meta.title;
+          bookmark.description = meta.description;
+          bookmark.imageUrl = meta.image;
+
+          await db
+            .update(bookmarks)
+            .set({
+              title: bookmark.title,
+              description: bookmark.description,
+              imageUrl: bookmark.imageUrl,
+              lastUpdated: sql`now()`,
+            })
+            .where(eq(bookmarks.id, bookmark.id));
+        }
+      }
+
+      return c.json({
+        bookmarks: data,
+        cursor: nextCursor,
+      });
+    } catch (error) {
+      console.log(error);
+      throw new HTTPException(500, { message: "Database Error" });
     }
-  )
+  })
   .get(
     "/favorites",
     validator("query", (value, c) => {

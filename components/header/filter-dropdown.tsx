@@ -50,18 +50,22 @@ export function FilterDropdown({ userId }: Props) {
         <DropdownMenuSeparator />
         <DropdownMenuItem
           className="hover:cursor-pointer"
-          onClick={() => {}} // get rid of this, we can use useQuery hook
+          onClick={() => {
+            router.push("/bookmarks");
+          }} // get rid of this, we can use useQuery hook
         >
-          <span>Date (Ascending)</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem className="hover:cursor-pointer">
           <span>Date (Descending)</span>
         </DropdownMenuItem>
         <DropdownMenuItem
+          className="hover:cursor-pointer"
+          onClick={() => router.push("/bookmarks?filter=ascending")}
+        >
+          <span>Date (Ascending)</span>
+        </DropdownMenuItem>
+
+        <DropdownMenuItem
           onClick={() => {
-            router.push(
-              "/filter" + "?" + createQueryString("favorites", "true")
-            );
+            router.push("/bookmarks?filter=favorites");
           }}
           className="hover:cursor-pointer"
         >

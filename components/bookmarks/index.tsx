@@ -1,13 +1,13 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Loader2 } from "lucide-react";
 import { Bookmark, Card } from "@/components/bookmarks/card";
 import { useGetBookmarks } from "@/hooks/use-get-bookmarks";
 import { useGetTags } from "@/hooks/use-get-tags";
 import { Fragment, useEffect, useRef } from "react";
-import { InfiniteData } from "@tanstack/react-query";
+import { InfiniteData, useQueryClient } from "@tanstack/react-query";
 
 export type InfiniteQueryBookmarks = InfiniteData<
   {
@@ -28,17 +28,27 @@ export type InfiniteQueryBookmarks = InfiniteData<
 
 interface Props {
   searchTerm: string | string[] | undefined;
+  filter: string | string[] | undefined;
+  userId: string;
 }
 
-export function Bookmarks({ searchTerm }: Props) {
+export function Bookmarks({ filter, searchTerm, userId }: Props) {
   const ref = useRef<HTMLDivElement | null>(null);
-  const { data: session } = useSession();
 
-  const path = usePathname();
+  const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    console.log("Invalidation");
+    queryClient.invalidateQueries({
+      queryKey: ["userBookmarks", filter, searchTerm],
+    });
+  }, [searchParams, queryClient, searchTerm, filter]);
+
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status } =
-    useGetBookmarks(searchTerm, path);
+    useGetBookmarks(filter, searchTerm);
 
-  const allTags = useGetTags(session?.user?.id);
+  const allTags = useGetTags(userId);
 
   useEffect(() => {
     // In the event the user deletes a bunch of bookmarks at the top of the page

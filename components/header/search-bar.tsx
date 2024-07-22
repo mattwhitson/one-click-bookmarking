@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -16,7 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { searchSchema } from "@/lib/zod-schemas";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useModalStore } from "@/hooks/modal-store";
 import { useDebouncedQuery } from "@/hooks/use-debounced-query";
 
@@ -31,6 +31,8 @@ export function SearchBar({
   const { type, onClose } = useModalStore();
   const [searchInput, setSearchInput] = useState(""); // only have this use state here because the component would stop detecting the useForm state change for some reason
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
   const form = useForm<z.infer<typeof searchSchema>>({
     resolver: zodResolver(searchSchema),
     defaultValues: {
@@ -49,8 +51,18 @@ export function SearchBar({
 
   function onSubmit(values: z.infer<typeof searchSchema>) {
     if (type) onClose();
+    form.reset();
+    setSearchInput("");
+    if (searchInputRef.current) searchInputRef.current.blur();
     router.push(`/bookmarks?search=${values.searchTerm}`);
   }
+
+  useEffect(() => {
+    if (pathname === "/bookmarks" && searchParams.get("search")) return;
+    form.reset();
+    setSearchInput("");
+    if (searchInputRef.current) searchInputRef.current.blur();
+  }, [searchParams, pathname, form]);
 
   return (
     <>
@@ -58,7 +70,7 @@ export function SearchBar({
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
-            className={`mt-8 sm:mt-0 translate-y-1 h-fit sm:w-[512px] sm:block relative ${
+            className={`mt-8 sm:mt-0 translate-y-1 h-fit sm:w-[448px] sm:block relative ${
               width && width
             }`}
           >

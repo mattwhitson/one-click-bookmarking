@@ -14,28 +14,19 @@ async function getBookmarks(params: any) {
   const cookie: Record<string, string> = {
     Cookie: headers().get("Cookie")!,
   };
-  let response;
-  if (params.queryKey[1] === "/bookmarks") {
-    let searchTerm = "undefined";
-    if (params.queryKey[2] !== undefined) {
-      searchTerm = params.queryKey[2];
-    }
-    response = await client.api.bookmarks.$get(
-      {
-        query: { cursor: "undefined", searchTerm: searchTerm },
+  const filter = params.queryKey[1] as string | undefined;
+  const searchTerm = params.queryKey[2] as string | undefined;
+
+  const response = await client.api.bookmarks.$get(
+    {
+      query: {
+        cursor: undefined,
+        searchTerm,
+        filter,
       },
-      { headers: cookie }
-    );
-  } else if (params.queryKey[1] === "/favorites") {
-    response = await client.api.bookmarks.favorites.$get(
-      {
-        query: {
-          cursor: "undefined",
-        },
-      },
-      { headers: cookie }
-    );
-  }
+    },
+    { headers: cookie }
+  );
 
   if (!response || !response.ok) {
     throw new Error("Failed to fetch your bookmarks!");
@@ -69,23 +60,23 @@ async function getTags(params: { queryKey: string[] }) {
 
 interface Props {
   path: string;
-  searchParam?: string | string[] | undefined;
+  filter?: string | string[] | undefined;
+  searchTerm?: string | string[] | undefined;
 }
 
 export default async function BookmarksPageWrapper({
   path,
-  searchParam,
+  filter,
+  searchTerm,
 }: Props) {
   const session = await auth();
   if (!session || !session.user?.id) redirect("/login");
   const userId = session.user.id;
 
   const queryClient = new QueryClient();
-
-  let queryKey = path;
-
+  console.log(filter, searchTerm);
   await queryClient.prefetchInfiniteQuery({
-    queryKey: ["userBookmarks", queryKey, searchParam],
+    queryKey: ["userBookmarks", filter, searchTerm],
     queryFn: getBookmarks,
     initialPageParam: undefined,
     getNextPageParam: (lastPage: any) => lastPage?.cursor,
@@ -99,7 +90,7 @@ export default async function BookmarksPageWrapper({
   return (
     <main className="w-full min-h-full dark:border-zinc-900 mt-16 sm:ml-20 mb-16">
       <HydrationBoundary state={dehydrate(queryClient)}>
-        <Bookmarks searchTerm={searchParam} />
+        <Bookmarks filter={filter} searchTerm={searchTerm} userId={userId} />
       </HydrationBoundary>
     </main>
   );

@@ -10,7 +10,8 @@ export function useSearchDebounce(
 ) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const searchParmam = searchParams.get("search");
+  const searchParam = searchParams.get("search");
+  const filterParam = searchParams.get("filter");
   const [search, setSearch] = useState("");
 
   useEffect(() => {
@@ -21,8 +22,13 @@ export function useSearchDebounce(
     const timeoutId = setTimeout(() => {
       if (document.activeElement !== searchInputRef.current) return;
       setSearch(searchTerm);
-      if (searchTerm !== "") router.push(`/bookmarks?search=${searchTerm}`);
-      else if (searchParmam) router.push("/bookmarks");
+      if (searchTerm !== "")
+        router.push(
+          `/bookmarks?${
+            filterParam ? `filter=${filterParam}&` : ""
+          }search=${searchTerm}`
+        );
+      else if (searchParam) router.push("/bookmarks");
     }, delay);
 
     return () => clearTimeout(timeoutId);

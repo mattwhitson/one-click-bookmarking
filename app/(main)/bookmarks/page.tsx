@@ -8,7 +8,8 @@ export default async function BookmarksPage({
   return (
     <BookmarksPageWrapper
       path={"/bookmarks"}
-      searchParam={searchParams?.["search"]}
+      filter={searchParams?.["filter"]}
+      searchTerm={searchParams?.["search"]}
     />
   );
 }

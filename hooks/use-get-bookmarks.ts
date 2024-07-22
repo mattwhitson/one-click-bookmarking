@@ -2,41 +2,34 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { client } from "@/lib/hono";
 
 export function useGetBookmarks(
-  searchTerm: string | string[] | undefined,
-  query?: string | undefined
+  filter: string | string[] | undefined,
+  searchTerm: string | string[] | undefined
 ) {
   const fetchBookmarks = async ({
     pageParam = undefined,
   }: {
     pageParam: number | undefined;
   }) => {
-    let response;
-    let search = searchTerm;
-    if (search === undefined) {
-      search = "undefined";
-    }
-    if (query === "/bookmarks") {
-      response = await client.api.bookmarks.$get({
-        query: { cursor: String(pageParam), searchTerm: search },
-      });
-    } else {
-      response = await client.api.bookmarks.favorites.$get({
-        query: { cursor: String(pageParam) },
-      });
-    }
+    const response = await client.api.bookmarks.$get({
+      query: {
+        cursor: String(pageParam),
+        filter: filter,
+        searchTerm: searchTerm,
+      },
+    });
 
     if (!response.ok) {
       throw new Error("Failed to fetch your bookmarks!");
     }
 
     const { bookmarks, cursor } = await response.json();
-
+    console.log("hi", filter, searchTerm);
     return { bookmarks, cursor };
   };
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status } =
     useInfiniteQuery({
-      queryKey: ["userBookmarks", query, searchTerm],
+      queryKey: ["userBookmarks", filter, searchTerm],
       queryFn: fetchBookmarks,
       initialPageParam: undefined,
       getNextPageParam: (lastPage) => lastPage?.cursor,
