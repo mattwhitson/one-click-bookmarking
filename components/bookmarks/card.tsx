@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -37,6 +38,7 @@ export interface Bookmark {
 }
 
 export function Card({ bookmark, allTags, userId }: Props) {
+  const [date, setDate] = useState("");
   const { id, url, favorite, tags } = bookmark;
 
   const { onOpen } = useModalStore();
@@ -108,12 +110,16 @@ export function Card({ bookmark, allTags, userId }: Props) {
     },
   });
 
+  useEffect(() => {
+    setDate(format(bookmark.createdAt!, "do 'of' MMMM yyyy"));
+  }, [bookmark.createdAt]);
+
   return (
     <div className="flex w-full">
       <article className="hidden sm:min-w-[25%] min-h-full border-r-[1px] border-l-[1px] border-b-[1px] dark:border-zinc-900 sm:flex flex-col py-4">
         <div className="mt-[0.65rem] relative">
           <p className="text-center pt-[0.1rem] text-xs pl-3 sm:text-sm sm:text-end pr-3 sm:pr-4">
-            {format(bookmark.createdAt!, "do 'of' MMMM yyyy")}
+            {date}
           </p>
           <FiDisc className="w-4 h-4 absolute top-1 right-[-0.5rem] bg-background rounded-full" />
         </div>
@@ -187,8 +193,7 @@ export function Card({ bookmark, allTags, userId }: Props) {
           </div>
         </div>
         <p className="sm:hidden text-sm">
-          Saved on the{" "}
-          <em>{format(bookmark.createdAt!, "do 'of' MMMM yyyy")}</em>
+          Saved on the <em>{date}</em>
         </p>
       </article>
     </div>

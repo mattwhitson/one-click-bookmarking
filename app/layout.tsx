@@ -8,6 +8,7 @@ import "./globals.css";
 import { ModalProvider } from "@/components/providers/modal-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { SessionProvider } from "next-auth/react";
+import { Footer } from "@/components/footer";
 
 const font = Poppins({
   subsets: ["latin"],
@@ -38,6 +39,7 @@ export default function RootLayout({
             <QueryProvider>
               <Header />
               {children}
+              <Footer />
               <Toaster />
               <ModalProvider />
             </QueryProvider>

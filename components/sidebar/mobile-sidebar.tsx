@@ -56,7 +56,9 @@ export function MobileSidebar({ children }: { children: React.ReactNode }) {
             Mobile navigation and search
           </SheetDescription>
         </SheetHeader>
-        <SearchBar session={session} width="sm:w-full mt-4" />
+        <div className="sm:w-full">
+          <SearchBar session={session} width="sm:w-full" />
+        </div>
         <section className="flex flex-col items-center mt-4 space-y-6">
           <Link
             onClick={() => onClose()}
