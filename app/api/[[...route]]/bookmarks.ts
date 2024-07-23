@@ -122,6 +122,12 @@ const app = new Hono()
         .orderBy(orderByClause);
 
       const ids = temp.map((temp) => temp.id);
+      if (!ids.length) {
+        return c.json({
+          bookmarks: [] as BookmarksWithTags[],
+          cursor: undefined as number | undefined,
+        });
+      }
 
       // obviously this sucks because i'm doing an extra query for no reason but i have no idea how to create the
       // query correctly so that if there is one element in the array_agg then i should return all of them
@@ -180,7 +186,8 @@ const app = new Hono()
             .where(eq(bookmarks.id, bookmark.id));
         }
       }
-
+      console.log(filter, searchTerm, tagsFilter);
+      console.log(data);
       return c.json({
         bookmarks: data,
         cursor: nextCursor,

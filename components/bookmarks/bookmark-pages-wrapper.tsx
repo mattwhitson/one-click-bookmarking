@@ -16,13 +16,14 @@ async function getBookmarks(params: any) {
   };
   const filter = params.queryKey[1] as string | undefined;
   const searchTerm = params.queryKey[2] as string | undefined;
-
+  const tags = params.queryKey[3] as string | string[] | undefined;
   const response = await client.api.bookmarks.$get(
     {
       query: {
         cursor: undefined,
         searchTerm,
         filter,
+        tagsFilter: tags,
       },
     },
     { headers: cookie }
@@ -78,7 +79,14 @@ export default async function BookmarksPageWrapper({
   const queryClient = new QueryClient();
 
   await queryClient.prefetchInfiniteQuery({
-    queryKey: ["userBookmarks", filter, searchTerm, tagsFilter],
+    queryKey: [
+      "userBookmarks",
+      filter,
+      searchTerm,
+      tagsFilter !== undefined && !Array.isArray(tagsFilter)
+        ? [tagsFilter]
+        : tagsFilter,
+    ],
     queryFn: getBookmarks,
     initialPageParam: undefined,
     getNextPageParam: (lastPage: any) => lastPage?.cursor,
@@ -88,6 +96,11 @@ export default async function BookmarksPageWrapper({
     queryKey: ["tags", userId],
     queryFn: getTags,
   });
+
+  queryClient
+    .getQueryCache()
+    .getAll()
+    .map((cache) => console.log(JSON.parse(JSON.stringify(cache.queryKey))));
 
   return (
     <main className="w-full min-h-full dark:border-zinc-900 mt-16 sm:ml-20 mb-16">

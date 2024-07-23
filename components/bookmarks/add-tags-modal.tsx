@@ -184,9 +184,22 @@ export function ChangeTagsModal() {
             })
           );
         } else {
+          queryClient
+            .getQueryCache()
+            .getAll()
+            .map((cache) =>
+              console.log(JSON.parse(JSON.stringify(cache.queryKey)))
+            );
+          console.log(tagsParam);
           queryClient.invalidateQueries({
             queryKey: ["userBookmarks", filterParam, searchParam, tagsParam],
           });
+          queryClient
+            .getQueryCache()
+            .getAll()
+            .map((cache) =>
+              console.log(JSON.parse(JSON.stringify(cache.queryKey)))
+            );
         }
 
         autoInvalidatedPaths.forEach((path) => {

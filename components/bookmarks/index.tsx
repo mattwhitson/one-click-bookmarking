@@ -1,13 +1,15 @@
 "use client";
 
 import { Fragment, useEffect, useRef, useState } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { notFound, usePathname, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { Bookmark, Card } from "@/components/bookmarks/card";
 import { useGetBookmarks } from "@/hooks/use-get-bookmarks";
 import { useGetTags } from "@/hooks/use-get-tags";
 import { InfiniteData, useQueryClient } from "@tanstack/react-query";
 import { autoInvalidatedPaths } from "@/lib/utils";
+import { useLoading } from "@/hooks/use-loading";
+import { useIsFirstLoad } from "@/hooks/use-is-first-load";
 
 export type InfiniteQueryBookmarks = InfiniteData<
   {
@@ -43,8 +45,6 @@ function isDefaultRevalidatedPath(
 }
 
 export function Bookmarks({ filter, searchTerm, tagsFilter, userId }: Props) {
-  const [firstLoad, setFirstLoad] = useState(false);
-  const [routeChanged, setRouteChanged] = useState(true);
   const ref = useRef<HTMLDivElement | null>(null);
 
   const searchParams = useSearchParams();
@@ -70,68 +70,22 @@ export function Bookmarks({ filter, searchTerm, tagsFilter, userId }: Props) {
     isFetchingNextPage,
     status,
     isFetching,
-  } = useGetBookmarks(filter, searchTerm, tagsFilter);
+  } = useGetBookmarks(
+    filter,
+    searchTerm,
+    tagsFilter !== undefined && !Array.isArray(tagsFilter)
+      ? [tagsFilter]
+      : tagsFilter
+  );
 
   const allTags = useGetTags(userId);
 
-  // these next two useEffects are used to check for route change so we can show loading symbol on param change(i.e. search or tag filter)
-  // but not to show it when loading most often used ordering like favorites or asc/desc (because they are prefetched on the server and revalidated on every mutation)
-  useEffect(() => {
-    if (!firstLoad) setFirstLoad(true);
-    else setRouteChanged(true);
-  }, [filter, searchTerm, tagsFilter, firstLoad]);
+  // should i use the loading hook? It's kinda makes the experience more jank, so probably not
+  const { isLoading } = useLoading(isFetching);
+  const { isFirstLoad, haveParamsChanged } = useIsFirstLoad(isFetching);
 
-  useEffect(() => {
-    if (!isFetching) setRouteChanged(false);
-  }, [isFetching]);
-
-  useEffect(() => {
-    // In the event the user deletes a bunch of bookmarks at the top of the page
-    if (
-      ref === null ||
-      ref.current === null ||
-      isFetchingNextPage ||
-      !hasNextPage
-    )
-      return;
-    const rect = ref.current.getBoundingClientRect();
-    if (rect.top <= window.innerHeight) {
-      fetchNextPage();
-    }
-
-    function handleScroll() {
-      if (
-        ref === null ||
-        ref.current === null ||
-        isFetchingNextPage ||
-        !hasNextPage
-      )
-        return;
-      const rect = ref.current.getBoundingClientRect();
-      if (rect.top <= window.innerHeight) {
-        fetchNextPage();
-      }
-    }
-
-    window.addEventListener("scroll", handleScroll, true);
-
-    return () => window.removeEventListener("scroll", handleScroll, true);
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage, data]);
-
-  // should we add isFetching here? probably, even though it means theres a loading bar, because
-  // stuff popping up randomly is arguably a crappier experience than waiting the couple seconds for
-  // the data to load.
-  // Another idea would be to revalidate filtered routes (ie. asc, desc, favorites) immediately, and then
-  // refresh the dynamic routes (tags and search) on page load. Might be the best compromise, because that way
-  //each update is only ~3 api calls
-  if (
-    (data === undefined && status !== "success") ||
-    status === "pending" ||
-    (isFetching &&
-      !isDefaultRevalidatedPath(filter, searchTerm, tagsFilter) &&
-      routeChanged)
-  ) {
-    return <Loader2 className="animate-spin mx-auto mt-16 w-12 h-12" />;
+  if (isFetching && !isFirstLoad && haveParamsChanged) {
+    return <Loader2 className="animate-spin mx-auto w-12 h-12 mt-6" />;
   }
 
   return (
