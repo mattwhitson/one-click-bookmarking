@@ -17,18 +17,24 @@ import { Button } from "@/components/ui/button";
 import { useGetTags } from "@/hooks/use-get-tags";
 import { Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { ModalTypes, useModalStore } from "@/hooks/modal-store";
 
 interface Props {
   userId: string | undefined;
 }
 
 export function FilterDropdown({ userId }: Props) {
-  const router = useRouter();
+  const { isOpen, type, onClose, onOpen } = useModalStore();
   const [tagsSelected, setTagsSelected] = useState<boolean[]>([]);
+  const router = useRouter();
   const tags = useGetTags(userId);
+
+  const isDropdownOpen = isOpen && type === ModalTypes.DropdownMenu;
 
   const searchParams = useSearchParams();
   const searchParam = searchParams.get("search");
+  const tagsFitlerParam = searchParams.get("tags");
+
   useEffect(() => {
     setTagsSelected(Array(tags.data?.length).fill(false));
   }, [tags.data?.length]);
@@ -40,10 +46,40 @@ export function FilterDropdown({ userId }: Props) {
     return params.toString();
   };
 
+  useEffect(() => {
+    if (!tagsFitlerParam) {
+      setTagsSelected(Array(tags.data?.length).fill(false));
+    }
+  }, [tagsFitlerParam, tags.data?.length]);
+
+  function handleClick() {
+    let newUrl = "bookmarks?";
+    let first = true;
+    if (!tags.data) return;
+
+    for (let i = 0; i < tagsSelected.length; i++) {
+      if (tagsSelected[i]) {
+        newUrl += `${!first ? "&" : ""}tags=${tags.data[i].tag}`;
+        first = false;
+      }
+    }
+
+    if (first === true) {
+      router.push("/bookmarks");
+      onClose();
+    }
+    router.push(newUrl);
+    onClose();
+  }
+
   return (
-    <DropdownMenu modal={false}>
+    <DropdownMenu modal={false} open={isDropdownOpen} onOpenChange={onClose}>
       <DropdownMenuTrigger asChild>
-        <Button className="p-2 h-fit mr-2" variant="ghost">
+        <Button
+          className="p-2 h-fit mr-2"
+          variant="ghost"
+          onClick={() => onOpen(ModalTypes.DropdownMenu)}
+        >
           Filter
         </Button>
       </DropdownMenuTrigger>
@@ -56,7 +92,7 @@ export function FilterDropdown({ userId }: Props) {
             router.push(
               `/bookmarks${searchParam ? `?search=${searchParam}` : ""}`
             );
-          }} // get rid of this, we can use useQuery hook
+          }}
         >
           <span>Date (Descending)</span>
         </DropdownMenuItem>
@@ -72,7 +108,6 @@ export function FilterDropdown({ userId }: Props) {
         >
           <span>Date (Ascending)</span>
         </DropdownMenuItem>
-
         <DropdownMenuItem
           onClick={() => {
             router.push(
@@ -116,6 +151,13 @@ export function FilterDropdown({ userId }: Props) {
               ) : (
                 <Loader2 className="animate-spin mx-auto w-4 h-4" />
               )}
+              <Button
+                className="mt-2 h-8"
+                variant="secondary"
+                onClick={handleClick}
+              >
+                Apply tags
+              </Button>
             </DropdownMenuSubContent>
           </DropdownMenuPortal>
         </DropdownMenuSub>

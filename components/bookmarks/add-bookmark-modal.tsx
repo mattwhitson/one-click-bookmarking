@@ -30,6 +30,7 @@ import { newBookmarkSchema } from "@/lib/zod-schemas";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { InfiniteQueryBookmarks } from ".";
 import { Tag } from "@/app/api/[[...route]]/bookmarks";
+import { autoInvalidatedPaths } from "@/lib/utils";
 
 export function AddBookmarkModal() {
   const { type, isOpen, onClose } = useModalStore();
@@ -37,7 +38,8 @@ export function AddBookmarkModal() {
   const searchParams = useSearchParams();
   const searchParam = searchParams.get("search") || undefined;
   const filterParam = searchParams.get("filter") || undefined;
-
+  const tagsArray = searchParams.getAll("tags");
+  const tagsParam = tagsArray.length ? tagsArray : undefined;
   const isModalOpen = isOpen && type === ModalTypes.AddBookmark;
   const form = useForm<z.infer<typeof newBookmarkSchema>>({
     resolver: zodResolver(newBookmarkSchema),
@@ -63,9 +65,16 @@ export function AddBookmarkModal() {
 
     // TODO: should i just requery the result or do this? idk, probably should test it later
     onSuccess(data) {
-      console.log(searchParam, filterParam);
       queryClient.invalidateQueries({
-        queryKey: ["userBookmarks", filterParam, searchParam],
+        queryKey: ["userBookmarks", filterParam, searchParam, tagsParam],
+      });
+
+      autoInvalidatedPaths.forEach((path) => {
+        if (path !== filterParam) {
+          queryClient.invalidateQueries({
+            queryKey: ["userBookmarks", path, undefined, undefined],
+          });
+        }
       });
 
       // const bookmark = { ...data.bookmark, tags: [] as Tag[] };

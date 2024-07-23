@@ -10,6 +10,7 @@ import { InfiniteQueryBookmarks } from "../bookmarks";
 import { toast } from "sonner";
 import { client } from "@/lib/hono";
 import { Tag } from "@/app/api/[[...route]]/bookmarks";
+import { autoInvalidatedPaths } from "@/lib/utils";
 
 export function Tags({ session }: { session: Session }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -30,26 +31,21 @@ export function Tags({ session }: { session: Session }) {
         const error = await res.json();
         console.log(error);
         toast("Something went wrong.");
+        throw error;
       }
     },
 
     // TODO: should i just requery the result or do this? idk, probably should test it later
     async onSuccess(data) {
-      if (data !== undefined) {
+      autoInvalidatedPaths.forEach((path) => {
         queryClient.invalidateQueries({
-          queryKey: ["userBookmarks", "/bookmarks", undefined],
-          refetchType: "active",
+          queryKey: ["userBookmarks", path, undefined, undefined],
         });
+      });
 
-        queryClient.invalidateQueries({
-          queryKey: ["userBookmarks", "/favorites", undefined],
-          refetchType: "active",
-        });
-
-        queryClient.setQueryData(["tags", session?.user?.id], (prev: Tag[]) => [
-          ...prev.filter((tag) => tag.id !== data.tagId),
-        ]);
-      }
+      queryClient.setQueryData(["tags", session?.user?.id], (prev: Tag[]) => [
+        ...prev.filter((tag) => tag.id !== data.tagId),
+      ]);
     },
   });
 

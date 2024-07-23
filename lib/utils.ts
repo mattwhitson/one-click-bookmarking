@@ -9,3 +9,5 @@ export function cleanUpUrl(url: string) {
   const copy = new URL(url);
   return copy.hostname;
 }
+
+export const autoInvalidatedPaths = [undefined, "favorites", "ascending"];

@@ -41,18 +41,19 @@ import { InfiniteQueryBookmarks } from ".";
 import { useSession } from "next-auth/react";
 import { useGetTags } from "@/hooks/use-get-tags";
 import { Loader2 } from "lucide-react";
+import { autoInvalidatedPaths } from "@/lib/utils";
 
 export function ChangeTagsModal() {
-  const { data: session } = useSession();
-
-  const tags = useGetTags(session?.user?.id);
-
   const searchParams = useSearchParams();
   const searchParam = searchParams.get("search") || undefined;
   const filterParam = searchParams.get("filter") || undefined;
+  const tagsArray = searchParams.getAll("tags");
+  const tagsParam = tagsArray.length ? tagsArray : undefined;
+
   const { type, isOpen, onClose, data } = useModalStore();
   const isModalOpen = isOpen && type === ModalTypes.ChangeTag;
 
+  const tags = useGetTags(data?.userId);
   const [selectedTags, setSelectedTags] = useState<boolean[]>([]);
 
   useEffect(() => {
@@ -93,7 +94,7 @@ export function ChangeTagsModal() {
     },
     onSuccess(result, variables) {
       queryClient.setQueryData(
-        ["userBookmarks", filterParam, searchParam],
+        ["userBookmarks", filterParam, searchParam, tagsParam],
         (prev: InfiniteQueryBookmarks) => ({
           ...prev,
           pages: prev?.pages.map((page) => ({
@@ -113,7 +114,15 @@ export function ChangeTagsModal() {
         })
       );
 
-      queryClient.setQueryData(["tags", session?.user?.id], (prev: Tag[]) => {
+      autoInvalidatedPaths.forEach((path) => {
+        if (path !== filterParam) {
+          queryClient.invalidateQueries({
+            queryKey: ["userBookmarks", path, undefined, undefined],
+          });
+        }
+      });
+
+      queryClient.setQueryData(["tags", data?.userId], (prev: Tag[]) => {
         return [...prev, { id: result?.id, tag: result?.tag }];
       });
       // TODO: should probably just fetch bookmaarks like i do for the tags
@@ -150,28 +159,57 @@ export function ChangeTagsModal() {
         const deleted = result.deleted;
         const bookmarkId = result.bookmarkId;
 
-        queryClient.setQueryData(
-          ["userBookmarks", filterParam, searchParam],
-          (prev: InfiniteQueryBookmarks) => ({
-            ...prev,
-            pages: prev.pages.map((page) => ({
-              ...page,
-              bookmarks: page.bookmarks.map((bookmark) =>
-                bookmark.id === bookmarkId
-                  ? {
-                      ...bookmark,
-                      tags: [
-                        ...bookmark.tags.filter(
-                          (tag) => !deleted?.includes(tag.id)
-                        ),
-                        ...added,
-                      ],
-                    }
-                  : { ...bookmark }
-              ),
-            })),
-          })
-        );
+        console.log(searchParam, tagsParam);
+        if (!searchParam && !tagsParam) {
+          queryClient.setQueryData(
+            ["userBookmarks", filterParam, searchParam, tagsParam],
+            (prev: InfiniteQueryBookmarks) => ({
+              ...prev,
+              pages: prev.pages.map((page) => ({
+                ...page,
+                bookmarks: page.bookmarks.map((bookmark) =>
+                  bookmark.id === bookmarkId
+                    ? {
+                        ...bookmark,
+                        tags: [
+                          ...bookmark.tags.filter(
+                            (tag) => !deleted?.includes(tag.id)
+                          ),
+                          ...added,
+                        ],
+                      }
+                    : { ...bookmark }
+                ),
+              })),
+            })
+          );
+        } else {
+          queryClient
+            .getQueryCache()
+            .getAll()
+            .map((cache) =>
+              console.log(JSON.parse(JSON.stringify(cache.queryKey)))
+            );
+          console.log(
+            "FILtER",
+            filterParam,
+            "SEARCH",
+            searchParam,
+            "TAGS",
+            tagsParam
+          );
+          queryClient.invalidateQueries({
+            queryKey: ["userBookmarks", filterParam, searchParam, tagsParam],
+          });
+        }
+
+        autoInvalidatedPaths.forEach((path) => {
+          if (path !== filterParam) {
+            queryClient.invalidateQueries({
+              queryKey: ["userBookmarks", path, undefined, undefined],
+            });
+          }
+        });
 
         data.bookmark.tags = [
           ...data.bookmark.tags.filter((tag) => !deleted?.includes(tag.id)),

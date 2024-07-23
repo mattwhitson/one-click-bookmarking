@@ -13,7 +13,19 @@ import {
 } from "@/db/schema";
 import { newBookmarkSchema } from "@/lib/zod-schemas";
 import { authenticateUser } from "@/auth";
-import { and, asc, count, desc, eq, gt, ilike, lt, or, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  gt,
+  ilike,
+  inArray,
+  lt,
+  or,
+  sql,
+} from "drizzle-orm";
 
 export interface Tag {
   id: number;
@@ -46,10 +58,11 @@ const app = new Hono()
   .get("/", async (c) => {
     const userId = await authenticateUser();
 
+    const tagsFilter = c.req.queries("tagsFilter");
     const cursor = Number(c.req.query("cursor"));
     const filter = String(c.req.query("filter"));
     const searchTerm = String(c.req.query("searchTerm"));
-    console.log(searchTerm, filter);
+
     const filterClause =
       filter === "favorites"
         ? and(
@@ -64,7 +77,7 @@ const app = new Hono()
         ? lt(bookmarks.id, cursor)
         : undefined;
 
-    const whereClause =
+    const searchClause =
       searchTerm !== "undefined"
         ? and(
             and(
@@ -83,6 +96,11 @@ const app = new Hono()
             filterClause
           )
         : and(eq(bookmarks.userId, userId), filterClause);
+
+    const whereClause =
+      tagsFilter && tagsFilter.length > 0
+        ? and(searchClause, inArray(tags.tag, tagsFilter))
+        : searchClause;
 
     const orderByClause =
       filter === "ascending"
@@ -143,7 +161,8 @@ const app = new Hono()
             .where(eq(bookmarks.id, bookmark.id));
         }
       }
-
+      console.log("REFETCHING");
+      console.log(data);
       return c.json({
         bookmarks: data,
         cursor: nextCursor,

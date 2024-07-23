@@ -1,13 +1,13 @@
 "use client";
 
+import { Fragment, useEffect, useRef, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useSession } from "next-auth/react";
 import { Loader2 } from "lucide-react";
 import { Bookmark, Card } from "@/components/bookmarks/card";
 import { useGetBookmarks } from "@/hooks/use-get-bookmarks";
 import { useGetTags } from "@/hooks/use-get-tags";
-import { Fragment, useEffect, useRef } from "react";
 import { InfiniteData, useQueryClient } from "@tanstack/react-query";
+import { autoInvalidatedPaths } from "@/lib/utils";
 
 export type InfiniteQueryBookmarks = InfiniteData<
   {
@@ -27,23 +27,43 @@ export type InfiniteQueryBookmarks = InfiniteData<
 >;
 
 interface Props {
-  searchTerm: string | string[] | undefined;
   filter: string | string[] | undefined;
+  searchTerm: string | string[] | undefined;
+  tagsFilter: string | string[] | undefined;
   userId: string;
 }
 
-export function Bookmarks({ filter, searchTerm, userId }: Props) {
+function isDefaultRevalidatedPath(
+  filter: string | string[] | undefined,
+  searchTerm: string | string[] | undefined,
+  tagsFilter: string | string[] | undefined
+) {
+  if (Array.isArray(filter) || tagsFilter || searchTerm) return false;
+  return autoInvalidatedPaths.includes(filter);
+}
+
+export function Bookmarks({ filter, searchTerm, tagsFilter, userId }: Props) {
+  const pathname = usePathname();
+  const [routeChanged, setRouteChanged] = useState(true);
   const ref = useRef<HTMLDivElement | null>(null);
 
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    console.log("Invalidation");
+    if (
+      !searchTerm &&
+      !tagsFilter &&
+      isDefaultRevalidatedPath(filter, searchTerm, tagsFilter)
+    ) {
+      console.log("Guttentaig");
+      return;
+    }
+    console.log("NEIN");
     queryClient.invalidateQueries({
-      queryKey: ["userBookmarks", filter, searchTerm],
+      queryKey: ["userBookmarks", filter, searchTerm, tagsFilter],
     });
-  }, [searchParams, queryClient, searchTerm, filter]);
+  }, [searchParams, queryClient, searchTerm, filter, tagsFilter]);
 
   const {
     data,
@@ -52,9 +72,19 @@ export function Bookmarks({ filter, searchTerm, userId }: Props) {
     isFetchingNextPage,
     status,
     isFetching,
-  } = useGetBookmarks(filter, searchTerm);
+  } = useGetBookmarks(filter, searchTerm, tagsFilter);
 
   const allTags = useGetTags(userId);
+
+  // these next two useEffects are used to check for route change so we can show loading symbol on param change(i.e. search or tag filter)
+  // but not to show it when loading most often used ordering like favorites or asc/desc (because they are prefetched on the server and revalidated on every mutation)
+  useEffect(() => {
+    setRouteChanged(true);
+  }, [filter, searchTerm, tagsFilter]);
+
+  useEffect(() => {
+    if (!isFetching) setRouteChanged(false);
+  }, [isFetching]);
 
   useEffect(() => {
     // In the event the user deletes a bunch of bookmarks at the top of the page
@@ -92,7 +122,16 @@ export function Bookmarks({ filter, searchTerm, userId }: Props) {
   // should we add isFetching here? probably, even though it means theres a loading bar, because
   // stuff popping up randomly is arguably a crappier experience than waiting the couple seconds for
   // the data to load.
-  if ((data === undefined && status !== "success") || status === "pending") {
+  // Another idea would be to revalidate filtered routes (ie. asc, desc, favorites) immediately, and then
+  // refresh the dynamic routes (tags and search) on page load. Might be the best compromise, because that way
+  //each update is only ~3 api calls
+  if (
+    (data === undefined && status !== "success") ||
+    status === "pending" ||
+    (isFetching &&
+      !isDefaultRevalidatedPath(filter, searchTerm, tagsFilter) &&
+      routeChanged)
+  ) {
     return <Loader2 className="animate-spin mx-auto mt-16 w-12 h-12" />;
   }
 
@@ -105,6 +144,7 @@ export function Bookmarks({ filter, searchTerm, userId }: Props) {
               key={bookmark.id}
               bookmark={bookmark}
               allTags={allTags.data}
+              userId={userId}
             />
           ))}
         </Fragment>

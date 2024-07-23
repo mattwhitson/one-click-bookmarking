@@ -62,21 +62,23 @@ interface Props {
   path: string;
   filter?: string | string[] | undefined;
   searchTerm?: string | string[] | undefined;
+  tagsFilter?: string | string[] | undefined;
 }
 
 export default async function BookmarksPageWrapper({
   path,
   filter,
   searchTerm,
+  tagsFilter,
 }: Props) {
   const session = await auth();
   if (!session || !session.user?.id) redirect("/login");
   const userId = session.user.id;
 
   const queryClient = new QueryClient();
-  console.log(filter, searchTerm);
+
   await queryClient.prefetchInfiniteQuery({
-    queryKey: ["userBookmarks", filter, searchTerm],
+    queryKey: ["userBookmarks", filter, searchTerm, tagsFilter],
     queryFn: getBookmarks,
     initialPageParam: undefined,
     getNextPageParam: (lastPage: any) => lastPage?.cursor,
@@ -90,7 +92,12 @@ export default async function BookmarksPageWrapper({
   return (
     <main className="w-full min-h-full dark:border-zinc-900 mt-16 sm:ml-20 mb-16">
       <HydrationBoundary state={dehydrate(queryClient)}>
-        <Bookmarks filter={filter} searchTerm={searchTerm} userId={userId} />
+        <Bookmarks
+          filter={filter}
+          searchTerm={searchTerm}
+          tagsFilter={tagsFilter}
+          userId={userId}
+        />
       </HydrationBoundary>
     </main>
   );

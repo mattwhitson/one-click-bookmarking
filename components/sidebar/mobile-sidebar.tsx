@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/sheet";
 import { ModalTypes, useModalStore } from "@/hooks/modal-store";
 import { SearchBar } from "@/components/header/search-bar";
+import { DownloadCsv } from "./download-csv";
 
 export function MobileSidebar({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession();
@@ -67,10 +68,11 @@ export function MobileSidebar({ children }: { children: React.ReactNode }) {
           <Link
             onClick={() => onClose()}
             className="text-2xl text-zinc-600 font-semibold hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-zinc-50"
-            href="/favorites"
+            href="/tags"
           >
-            Favorites
+            Tags
           </Link>
+          <DownloadCsv />
         </section>
         {children}
       </SheetContent>

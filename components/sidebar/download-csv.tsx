@@ -21,8 +21,21 @@ async function exportToCsv() {
 
 export function DownloadCsv() {
   return (
-    <Button variant="ghost" className="h-12 w-12 p-0" onClick={exportToCsv}>
-      <File className="w-8 h-8" />
-    </Button>
+    <>
+      <Button
+        variant="ghost"
+        className="h-12 w-12 p-0 hidden sm:inline-block"
+        onClick={exportToCsv}
+      >
+        <File className="w-8 h-8 mx-auto" />
+      </Button>
+      <Button
+        variant="ghost"
+        className="p-0 sm:hidden inline-block hover:bg-inherit text-2xl"
+        onClick={exportToCsv}
+      >
+        Export to CSV
+      </Button>
+    </>
   );
 }

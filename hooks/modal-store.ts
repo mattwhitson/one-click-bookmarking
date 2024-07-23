@@ -6,10 +6,12 @@ export enum ModalTypes {
   ChangeTag,
   DeleteAccount,
   MobileSidebar,
+  DropdownMenu,
 }
 
 export type BookmarkData = {
   bookmark: Bookmark;
+  userId: string;
 };
 
 interface ModalState {

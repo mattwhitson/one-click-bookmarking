@@ -20,11 +20,6 @@ export async function Sidebar() {
       </Button>
       <AddBookmarkButton />
       <Button asChild variant="ghost" className="h-12 w-12 p-0">
-        <Link href="/favorites">
-          <Star className="w-8 h-8" />
-        </Link>
-      </Button>
-      <Button asChild variant="ghost" className="h-12 w-12 p-0">
         <Link href="/tags">
           <FiTag className="h-8 w-8" />
         </Link>

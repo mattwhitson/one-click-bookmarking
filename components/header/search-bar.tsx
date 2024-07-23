@@ -35,6 +35,10 @@ export function SearchBar({
   const searchParams = useSearchParams();
   const pathname = usePathname();
 
+  const filterParam = searchParams.get("filter") || undefined;
+  const tagsArray = searchParams.getAll("tags");
+  const tagsParam = tagsArray.length ? tagsArray : undefined;
+
   const form = useForm<z.infer<typeof searchSchema>>({
     resolver: zodResolver(searchSchema),
     defaultValues: {

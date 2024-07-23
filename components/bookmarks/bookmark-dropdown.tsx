@@ -18,19 +18,23 @@ import { client } from "@/lib/hono";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Bookmark } from "@/components/bookmarks/card";
 import { InfiniteQueryBookmarks } from "@/components/bookmarks/index";
+import { autoInvalidatedPaths } from "@/lib/utils";
 
 interface Props {
   bookmark: Bookmark;
   tags: Tag[];
+  userId: string;
 }
 
-export function BookmarkDropdown({ bookmark, tags }: Props) {
+export function BookmarkDropdown({ bookmark, tags, userId }: Props) {
   const { onOpen } = useModalStore();
   const queryClient = useQueryClient();
 
   const searchParams = useSearchParams();
   const searchParam = searchParams.get("search") || undefined;
   const filterParam = searchParams.get("filter") || undefined;
+  const tagsArray = searchParams.getAll("tags");
+  const tagsParam = tagsArray.length ? tagsArray : undefined;
 
   const { mutate: deleteMutation, isPending: deleteIsPending } = useMutation({
     mutationFn: async (bookmarkId: number) => {
@@ -47,7 +51,7 @@ export function BookmarkDropdown({ bookmark, tags }: Props) {
     },
     onSuccess(res, bookmarkId) {
       queryClient.setQueryData(
-        ["userBookmarks", filterParam, searchParam],
+        ["userBookmarks", filterParam, searchParam, tagsParam],
         (prev: InfiniteQueryBookmarks) => {
           const result = prev?.pages.map((page) => ({
             ...page,
@@ -56,6 +60,14 @@ export function BookmarkDropdown({ bookmark, tags }: Props) {
           return { ...prev, pages: result };
         }
       );
+
+      autoInvalidatedPaths.forEach((path) => {
+        if (path !== filterParam) {
+          queryClient.invalidateQueries({
+            queryKey: ["userBookmarks", path, undefined, undefined],
+          });
+        }
+      });
     },
   });
   return (
@@ -66,10 +78,12 @@ export function BookmarkDropdown({ bookmark, tags }: Props) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
-        <DropdownMenuLabel>Options</DropdownMenuLabel>
+        <DropdownMenuLabel>Filter Options</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          onClick={() => onOpen(ModalTypes.ChangeTag, { bookmark: bookmark })} // get rid of this, we can use useQuery hook
+          onClick={() =>
+            onOpen(ModalTypes.ChangeTag, { bookmark: bookmark, userId: userId })
+          }
         >
           Edit tags
         </DropdownMenuItem>

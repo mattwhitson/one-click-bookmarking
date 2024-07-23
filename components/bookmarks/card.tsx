@@ -10,7 +10,7 @@ import { BookmarkDropdown } from "@/components/bookmarks/bookmark-dropdown";
 import { Tag } from "@/app/api/[[...route]]/bookmarks";
 import { Button } from "../ui/button";
 
-import { cleanUpUrl } from "@/lib/utils";
+import { autoInvalidatedPaths, cleanUpUrl } from "@/lib/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { client } from "@/lib/hono";
 import { toast } from "sonner";
@@ -20,6 +20,7 @@ import { ModalTypes, useModalStore } from "@/hooks/modal-store";
 interface Props {
   bookmark: Bookmark;
   allTags: Tag[] | undefined;
+  userId: string;
 }
 
 export interface Bookmark {
@@ -35,14 +36,16 @@ export interface Bookmark {
   lastUpdated: string | null;
 }
 
-export function Card({ bookmark, allTags }: Props) {
+export function Card({ bookmark, allTags, userId }: Props) {
   const { id, url, favorite, tags } = bookmark;
 
   const { onOpen } = useModalStore();
 
   const searchParams = useSearchParams();
-  const searchParam = searchParams.get("search");
-  const filterParam = searchParams.get("filter");
+  const searchParam = searchParams.get("search") || undefined;
+  const filterParam = searchParams.get("filter") || undefined;
+  const tagsArray = searchParams.getAll("tags");
+  const tagsParam = tagsArray.length ? tagsArray : undefined;
 
   const queryClient = useQueryClient();
 
@@ -61,9 +64,10 @@ export function Card({ bookmark, allTags }: Props) {
       return data;
     },
     onSuccess: (data) => {
+      console.log("SEARCH:", searchParam);
       if (filterParam !== "favorites") {
         queryClient.setQueryData(
-          ["userBookmarks", filterParam, searchParam],
+          ["userBookmarks", filterParam, searchParam, tagsParam],
           (prev: InfiniteQueryBookmarks) => ({
             ...prev,
             pages: prev.pages.map((page) => ({
@@ -79,7 +83,7 @@ export function Card({ bookmark, allTags }: Props) {
       } else {
         if (!data.favorite) {
           queryClient.setQueryData(
-            ["userBookmarks", filterParam, searchParam],
+            ["userBookmarks", filterParam, searchParam, tagsParam],
             (prev: InfiniteQueryBookmarks) => ({
               ...prev,
               pages: prev.pages.map((page) => ({
@@ -94,6 +98,14 @@ export function Card({ bookmark, allTags }: Props) {
           );
         }
       }
+
+      autoInvalidatedPaths.forEach((path) => {
+        if (path !== filterParam) {
+          queryClient.invalidateQueries({
+            queryKey: ["userBookmarks", path, undefined, undefined],
+          });
+        }
+      });
     },
   });
 
@@ -110,7 +122,11 @@ export function Card({ bookmark, allTags }: Props) {
       <article className="flex flex-col gap-y-4 px-4 pb-4 pt-6 w-full border-b-[1px] border-r-[1px] dark:border-zinc-900">
         <div className="flex justify-between items-center">
           <h3 className="text-xl font-semibold">{bookmark.title}</h3>
-          <BookmarkDropdown bookmark={bookmark} tags={allTags ?? []} />
+          <BookmarkDropdown
+            bookmark={bookmark}
+            tags={allTags ?? []}
+            userId={userId}
+          />
         </div>
         <p className="text-sm text-zinc-800 dark:text-zinc-300 line-clamp-3">
           {bookmark.description}
@@ -156,7 +172,7 @@ export function Card({ bookmark, allTags }: Props) {
             <FiTag
               className="min-h-6 min-w-6 text-cyan-500"
               onClick={() =>
-                onOpen(ModalTypes.ChangeTag, { bookmark: bookmark })
+                onOpen(ModalTypes.ChangeTag, { bookmark: bookmark, userId })
               }
             />
           </Button>

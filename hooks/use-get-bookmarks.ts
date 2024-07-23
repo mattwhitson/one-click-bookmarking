@@ -3,7 +3,8 @@ import { client } from "@/lib/hono";
 
 export function useGetBookmarks(
   filter: string | string[] | undefined,
-  searchTerm: string | string[] | undefined
+  searchTerm: string | string[] | undefined,
+  tagsFilter: string | string[] | undefined
 ) {
   const fetchBookmarks = async ({
     pageParam = undefined,
@@ -15,6 +16,7 @@ export function useGetBookmarks(
         cursor: String(pageParam),
         filter: filter,
         searchTerm: searchTerm,
+        tagsFilter,
       },
     });
 
@@ -35,7 +37,7 @@ export function useGetBookmarks(
     status,
     isFetching,
   } = useInfiniteQuery({
-    queryKey: ["userBookmarks", filter, searchTerm],
+    queryKey: ["userBookmarks", filter, searchTerm, tagsFilter],
     queryFn: fetchBookmarks,
     initialPageParam: undefined,
     getNextPageParam: (lastPage) => lastPage?.cursor,

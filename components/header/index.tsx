@@ -5,8 +5,9 @@ import { ThemeToggle } from "@/components/header/theme-toggle";
 import { auth } from "@/auth";
 import { SearchBar } from "@/components/header/search-bar";
 import { MobileSidebarButton } from "@/components/header/mobile-sidebar-button";
-import { Button } from "../ui/button";
-import { FilterDropdown } from "./filter-dropdown";
+import { Button } from "@/components/ui/button";
+import { FilterDropdown } from "@/components/header/filter-dropdown";
+import { AddBookmarkMobile } from "@/components/header/add-bookmark-mobile";
 
 export async function Header() {
   const session = await auth();
@@ -26,10 +27,11 @@ export async function Header() {
           </Link>
         )}
         {session && (
-          <section className="flex items-center gap-x-4">
+          <section className="flex items-center gap-x-1 sm:gap-x-4">
             <div className="space-y-0 hidden sm:block">
               <SearchBar session={session} />
             </div>
+            <AddBookmarkMobile />
             <FilterDropdown userId={session.user?.id} />
           </section>
         )}

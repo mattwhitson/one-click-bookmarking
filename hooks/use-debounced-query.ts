@@ -27,12 +27,4 @@ export const useDebouncedQuery = (
   delay: number
 ) => {
   const search = useSearchDebounce(searchTerm, searchInputRef, delay);
-  return useInfiniteQuery({
-    queryKey: ["userBookmarks", "/bookmarks", search],
-    queryFn: fetchSearchResults,
-    initialPageParam: undefined,
-    getNextPageParam: (lastPage) => lastPage?.cursor,
-    refetchInterval: false,
-    enabled: searchTerm !== "",
-  });
 };

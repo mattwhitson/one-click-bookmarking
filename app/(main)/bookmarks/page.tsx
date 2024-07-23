@@ -10,6 +10,7 @@ export default async function BookmarksPage({
       path={"/bookmarks"}
       filter={searchParams?.["filter"]}
       searchTerm={searchParams?.["search"]}
+      tagsFilter={searchParams?.["tags"]}
     />
   );
 }
