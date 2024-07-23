@@ -25,7 +25,6 @@ export function useGetBookmarks(
     }
 
     const { bookmarks, cursor } = await response.json();
-    console.log("hi", filter, searchTerm);
     return { bookmarks, cursor };
   };
 

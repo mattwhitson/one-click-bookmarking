@@ -92,7 +92,7 @@ const app = new Hono()
         alreadyExists = await db
           .select({ count: count() })
           .from(tags)
-          .where(eq(tags.tag, tag));
+          .where(and(eq(tags.tag, tag), eq(tags.userId, userId)));
 
         if (alreadyExists[0].count > 0) {
           return c.json({ error: "Tag already exists!" }, 409);

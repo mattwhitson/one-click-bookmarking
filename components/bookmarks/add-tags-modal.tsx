@@ -184,20 +184,6 @@ export function ChangeTagsModal() {
             })
           );
         } else {
-          queryClient
-            .getQueryCache()
-            .getAll()
-            .map((cache) =>
-              console.log(JSON.parse(JSON.stringify(cache.queryKey)))
-            );
-          console.log(
-            "FILtER",
-            filterParam,
-            "SEARCH",
-            searchParam,
-            "TAGS",
-            tagsParam
-          );
           queryClient.invalidateQueries({
             queryKey: ["userBookmarks", filterParam, searchParam, tagsParam],
           });

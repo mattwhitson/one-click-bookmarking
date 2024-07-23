@@ -19,6 +19,7 @@ import {
   count,
   desc,
   eq,
+  exists,
   gt,
   ilike,
   inArray,
@@ -89,7 +90,7 @@ const app = new Hono()
                   ),
                   ilike(bookmarks.description, `%${searchTerm}%`)
                 ),
-                and(ilike(tags.tag, `%${searchTerm}%`), eq(tags.userId, userId))
+                ilike(tags.tag, `%${searchTerm}%`)
               ),
               eq(bookmarks.userId, userId)
             ),
@@ -108,6 +109,24 @@ const app = new Hono()
         : desc(bookmarks.createdAt);
 
     try {
+      const temp = await db
+        .select({
+          id: bookmarks.id,
+        })
+        .from(bookmarks)
+        .leftJoin(bookmarksToTags, eq(bookmarks.id, bookmarksToTags.bookmarkId))
+        .leftJoin(tags, eq(tags.id, bookmarksToTags.tagId))
+        .where(whereClause)
+        .limit(BOOKMARK_BATCH_SIZE)
+        .groupBy(bookmarks.id)
+        .orderBy(orderByClause);
+
+      const ids = temp.map((temp) => temp.id);
+
+      // obviously this sucks because i'm doing an extra query for no reason but i have no idea how to create the
+      // query correctly so that if there is one element in the array_agg then i should return all of them
+      // because ilike(tags.tag, `%${searchTerm}%`) will only return the tags the correctly pattern match the search term,
+      // when i want it to return all the elements if one matches
       const data = await db
         .select({
           id: bookmarks.id,
@@ -125,7 +144,7 @@ const app = new Hono()
         .from(bookmarks)
         .leftJoin(bookmarksToTags, eq(bookmarks.id, bookmarksToTags.bookmarkId))
         .leftJoin(tags, eq(tags.id, bookmarksToTags.tagId))
-        .where(whereClause)
+        .where(inArray(bookmarks.id, ids))
         .limit(BOOKMARK_BATCH_SIZE)
         .groupBy(bookmarks.id)
         .orderBy(orderByClause);
@@ -161,8 +180,7 @@ const app = new Hono()
             .where(eq(bookmarks.id, bookmark.id));
         }
       }
-      console.log("REFETCHING");
-      console.log(data);
+
       return c.json({
         bookmarks: data,
         cursor: nextCursor,
@@ -297,7 +315,7 @@ const app = new Hono()
   })
   .post("/", zValidator("json", newBookmarkSchema), async (c) => {
     let { url } = c.req.valid("json");
-    console.log(url);
+
     const userId = await authenticateUser();
 
     if (!url) {
@@ -362,7 +380,12 @@ const app = new Hono()
     const result = await db
       .select({ count: count() })
       .from(bookmarks)
-      .where(or(eq(bookmarks.url, copy), eq(bookmarks.url, url)));
+      .where(
+        and(
+          or(eq(bookmarks.url, copy), eq(bookmarks.url, url)),
+          eq(bookmarks.userId, userId)
+        )
+      );
 
     if (result[0].count > 0) {
       return c.json({ error: "Bookmark already exists!" }, 409);
@@ -387,7 +410,6 @@ const app = new Hono()
       metadata.bookmarkId = bookmark[0].id;
 
       if (hasRecentBookmarksRecord) {
-        console.log("Hey");
         await db
           .update(bookmarksRecentlyCreated)
           .set({ count: sql`${bookmarksRecentlyCreated.count} + 1` })

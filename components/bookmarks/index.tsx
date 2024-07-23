@@ -43,7 +43,7 @@ function isDefaultRevalidatedPath(
 }
 
 export function Bookmarks({ filter, searchTerm, tagsFilter, userId }: Props) {
-  const pathname = usePathname();
+  const [firstLoad, setFirstLoad] = useState(false);
   const [routeChanged, setRouteChanged] = useState(true);
   const ref = useRef<HTMLDivElement | null>(null);
 
@@ -56,10 +56,8 @@ export function Bookmarks({ filter, searchTerm, tagsFilter, userId }: Props) {
       !tagsFilter &&
       isDefaultRevalidatedPath(filter, searchTerm, tagsFilter)
     ) {
-      console.log("Guttentaig");
       return;
     }
-    console.log("NEIN");
     queryClient.invalidateQueries({
       queryKey: ["userBookmarks", filter, searchTerm, tagsFilter],
     });
@@ -79,8 +77,9 @@ export function Bookmarks({ filter, searchTerm, tagsFilter, userId }: Props) {
   // these next two useEffects are used to check for route change so we can show loading symbol on param change(i.e. search or tag filter)
   // but not to show it when loading most often used ordering like favorites or asc/desc (because they are prefetched on the server and revalidated on every mutation)
   useEffect(() => {
-    setRouteChanged(true);
-  }, [filter, searchTerm, tagsFilter]);
+    if (!firstLoad) setFirstLoad(true);
+    else setRouteChanged(true);
+  }, [filter, searchTerm, tagsFilter, firstLoad]);
 
   useEffect(() => {
     if (!isFetching) setRouteChanged(false);

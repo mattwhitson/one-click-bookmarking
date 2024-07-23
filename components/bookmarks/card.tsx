@@ -64,7 +64,6 @@ export function Card({ bookmark, allTags, userId }: Props) {
       return data;
     },
     onSuccess: (data) => {
-      console.log("SEARCH:", searchParam);
       if (filterParam !== "favorites") {
         queryClient.setQueryData(
           ["userBookmarks", filterParam, searchParam, tagsParam],

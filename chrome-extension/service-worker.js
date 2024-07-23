@@ -5,9 +5,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, onSuccess) {
     })
       .then((response) => response.json())
       .then((session) => {
-        console.log("DATA: ", session);
         if (session && Object.keys(session).length > 0) {
-          console.log(session);
           onSuccess(session);
         } else {
           onSuccess(null);
