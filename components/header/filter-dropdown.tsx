@@ -39,13 +39,6 @@ export function FilterDropdown({ userId }: Props) {
     setTagsSelected(Array(tags.data?.length).fill(false));
   }, [tags.data?.length]);
 
-  const createQueryString = (name: string, value: string) => {
-    const params = new URLSearchParams();
-    params.set(name, value);
-
-    return params.toString();
-  };
-
   useEffect(() => {
     if (!tagsFitlerParam) {
       setTagsSelected(Array(tags.data?.length).fill(false));
@@ -131,13 +124,14 @@ export function FilterDropdown({ userId }: Props) {
                   {tags.data.map((tag, index) => (
                     <DropdownMenuItem
                       key={tag.id}
-                      className="hover:cursor-pointer"
-                      onClickCapture={(e) => e.preventDefault()}
-                      onClick={() =>
+                      className="hover:cursor-pointer hover:blue-500 sm:hover-bg-[hsl(var(--secondary))]"
+                      onClickCapture={(e) => {
+                        e.preventDefault();
                         setTagsSelected((state) =>
                           state?.map((tag, i) => (i !== index ? tag : !tag))
-                        )
-                      }
+                        );
+                        e.currentTarget.blur();
+                      }}
                       style={{
                         backgroundColor: tagsSelected[index]
                           ? "hsl(var(--secondary))"

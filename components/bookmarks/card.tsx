@@ -137,6 +137,8 @@ export function Card({ bookmark, allTags, userId }: Props) {
           {bookmark.description}
         </p>
         <Link
+          target="_blank"
+          rel="noopener noreferrer"
           href={url}
           className="block relative h-64 border-1 w-full sm:w-96 md:w-full mx-auto border-[1px] dark:border-zinc-900 rounded-sm"
         >

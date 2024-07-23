@@ -449,8 +449,13 @@ export async function getMetadata(url: string) {
 
     if (!meta.image && (data["icon"] || data["apple-touch-icon"])) {
       const pathname = data["icon"] || data["apple-touch-icon"];
-      const { protocol, hostname } = new URL(url);
-      meta.image = `${protocol}//${hostname}${pathname}`;
+      try {
+        new URL(pathname);
+        meta.image = pathname;
+      } catch {
+        const { protocol, hostname } = new URL(url);
+        meta.image = `${protocol}//${hostname}${pathname}`;
+      }
     } else if (!meta.image) {
       meta.image = "/Bookmark-dynamic-gradient.png";
     }
