@@ -1,9 +1,9 @@
 "use client";
 
 import { useTheme } from "next-themes";
+import { Loader2, MoonIcon, SunIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
-import { Loader2, MoonIcon, SunIcon } from "lucide-react";
 
 type ThemeType = "dark" | "light";
 

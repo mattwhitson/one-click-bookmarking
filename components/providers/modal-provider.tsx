@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { auth } from "@/auth";
 import { AddBookmarkModal } from "@/components/bookmarks/add-bookmark-modal";
 import { ChangeTagsModal } from "@/components/bookmarks/add-tags-modal";
@@ -5,7 +6,6 @@ import { DeleteAccountModal } from "@/components/sidebar/delete-account-modal";
 import { MobileSidebar } from "@/components/sidebar/mobile-sidebar";
 import { SidebarDropdown } from "@/components/sidebar/sidebar-dropdown";
 import { Button } from "@/components/ui/button";
-import Image from "next/image";
 import { SignOut } from "@/components/sidebar/sign-out";
 
 export async function ModalProvider() {

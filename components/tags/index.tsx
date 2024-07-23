@@ -2,11 +2,10 @@
 
 import { useGetTags } from "@/hooks/use-get-tags";
 import { Session } from "next-auth";
-import { FiEdit, FiTrash2 } from "react-icons/fi";
-import { Button } from "../ui/button";
+import { FiTrash2 } from "react-icons/fi";
+import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { InfiniteQueryBookmarks } from "../bookmarks";
 import { toast } from "sonner";
 import { client } from "@/lib/hono";
 import { Tag } from "@/app/api/[[...route]]/bookmarks";

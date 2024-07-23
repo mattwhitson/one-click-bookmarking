@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useRef, useState } from "react";
-import { notFound, usePathname, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { Bookmark, Card } from "@/components/bookmarks/card";
 import { useGetBookmarks } from "@/hooks/use-get-bookmarks";
@@ -77,6 +77,39 @@ export function Bookmarks({ filter, searchTerm, tagsFilter, userId }: Props) {
       ? [tagsFilter]
       : tagsFilter
   );
+
+  useEffect(() => {
+    // In the event the user deletes a bunch of bookmarks at the top of the page
+    if (
+      ref === null ||
+      ref.current === null ||
+      isFetchingNextPage ||
+      !hasNextPage
+    )
+      return;
+    const rect = ref.current.getBoundingClientRect();
+    if (rect.top <= window.innerHeight) {
+      fetchNextPage();
+    }
+
+    function handleScroll() {
+      if (
+        ref === null ||
+        ref.current === null ||
+        isFetchingNextPage ||
+        !hasNextPage
+      )
+        return;
+      const rect = ref.current.getBoundingClientRect();
+      if (rect.top <= window.innerHeight) {
+        fetchNextPage();
+      }
+    }
+
+    window.addEventListener("scroll", handleScroll, true);
+
+    return () => window.removeEventListener("scroll", handleScroll, true);
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage, data]);
 
   const allTags = useGetTags(userId);
 

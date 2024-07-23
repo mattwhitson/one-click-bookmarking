@@ -97,11 +97,6 @@ export default async function BookmarksPageWrapper({
     queryFn: getTags,
   });
 
-  queryClient
-    .getQueryCache()
-    .getAll()
-    .map((cache) => console.log(JSON.parse(JSON.stringify(cache.queryKey))));
-
   return (
     <main className="w-full min-h-full dark:border-zinc-900 mt-16 sm:ml-20 mb-16">
       <HydrationBoundary state={dehydrate(queryClient)}>

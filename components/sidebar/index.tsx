@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { HomeIcon, Star } from "lucide-react";
+import { HomeIcon } from "lucide-react";
 import { FiTag } from "react-icons/fi";
 import { Button } from "@/components/ui/button";
 import { SignOut } from "@/components/sidebar/sign-out";

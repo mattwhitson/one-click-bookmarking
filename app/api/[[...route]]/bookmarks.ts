@@ -19,7 +19,6 @@ import {
   count,
   desc,
   eq,
-  exists,
   gt,
   ilike,
   inArray,
@@ -186,8 +185,7 @@ const app = new Hono()
             .where(eq(bookmarks.id, bookmark.id));
         }
       }
-      console.log(filter, searchTerm, tagsFilter);
-      console.log(data);
+
       return c.json({
         bookmarks: data,
         cursor: nextCursor,
@@ -197,98 +195,6 @@ const app = new Hono()
       throw new HTTPException(500, { message: "Database Error" });
     }
   })
-  .get(
-    "/favorites",
-    validator("query", (value, c) => {
-      const cursor = value["cursor"];
-      return {
-        cursor,
-      };
-    }),
-    async (c) => {
-      const userId = await authenticateUser();
-
-      const cursor = Number(c.req.query("cursor"));
-
-      try {
-        const data: BookmarksWithTags[] = await db
-          .select({
-            id: bookmarks.id,
-            url: bookmarks.url,
-            favorite: bookmarks.favorite,
-            createdAt: bookmarks.createdAt,
-            tags: sql<
-              Tag[]
-            >`json_agg(json_build_object('id', ${tags.id}, 'tag', ${tags.tag}))`,
-            title: bookmarks.title,
-            imageUrl: bookmarks.imageUrl,
-            description: bookmarks.description,
-            lastUpdated: bookmarks.lastUpdated,
-          })
-          .from(bookmarks)
-          .leftJoin(
-            bookmarksToTags,
-            eq(bookmarks.id, bookmarksToTags.bookmarkId)
-          )
-          .leftJoin(tags, eq(tags.id, bookmarksToTags.tagId))
-          .where(
-            and(
-              and(
-                eq(bookmarks.userId, userId),
-                cursor ? lt(bookmarks.id, cursor) : undefined
-              ),
-              eq(bookmarks.favorite, true)
-            )
-          )
-          .limit(BOOKMARK_BATCH_SIZE)
-          .groupBy(bookmarks.id)
-          .orderBy(desc(bookmarks.createdAt));
-
-        for (const bookmark of data) {
-          if (bookmark.tags[0].id === null) bookmark.tags = [];
-        }
-
-        let nextCursor = undefined;
-        if (data.length === BOOKMARK_BATCH_SIZE) {
-          nextCursor = data[BOOKMARK_BATCH_SIZE - 1].id;
-        }
-
-        // we'll try to update the metadata 3 days after the last time it was updated
-        for (const bookmark of data) {
-          if (
-            !bookmark.lastUpdated ||
-            Date.now() - bookmark.lastUpdated.getTime() > 1000 * 3600 * 72
-          ) {
-            const meta = await getMetadata(bookmark.url);
-            bookmark.title = meta.title;
-            bookmark.description = meta.description;
-            bookmark.imageUrl = meta.image;
-
-            await db
-              .update(bookmarks)
-              .set({
-                title: bookmark.title,
-                description: bookmark.description,
-                imageUrl: bookmark.imageUrl,
-                lastUpdated: sql`now()`,
-              })
-              .where(eq(bookmarks.id, bookmark.id));
-          }
-        }
-
-        return c.json(
-          {
-            bookmarks: data,
-            cursor: nextCursor,
-          },
-          200
-        );
-      } catch (error) {
-        console.log(error);
-        throw new HTTPException(500, { message: "Database Error" });
-      }
-    }
-  )
   .get("/all", async (c) => {
     const userId = await authenticateUser();
     try {
@@ -338,8 +244,8 @@ const app = new Hono()
         })
         .from(bookmarksRecentlyCreated)
         .where(eq(bookmarksRecentlyCreated.userId, userId));
-      // check if user has reached their daily bookmark limit
 
+      // check if user has reached their daily bookmark limit
       if (recentBookmarks[0]) {
         if (
           recentBookmarks[0].createdAt.getTime() - Date.now() >

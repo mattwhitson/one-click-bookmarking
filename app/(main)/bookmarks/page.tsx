@@ -5,7 +5,6 @@ export default async function BookmarksPage({
 }: {
   searchParams?: { [key: string]: string | string[] | undefined };
 }) {
-  console.log(searchParams);
   return (
     <BookmarksPageWrapper
       path={"/bookmarks"}

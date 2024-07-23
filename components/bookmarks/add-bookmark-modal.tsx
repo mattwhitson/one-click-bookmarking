@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -28,8 +28,6 @@ import { ModalTypes, useModalStore } from "@/hooks/modal-store";
 import { client } from "@/lib/hono";
 import { newBookmarkSchema } from "@/lib/zod-schemas";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { InfiniteQueryBookmarks } from ".";
-import { Tag } from "@/app/api/[[...route]]/bookmarks";
 import { autoInvalidatedPaths } from "@/lib/utils";
 
 export function AddBookmarkModal() {

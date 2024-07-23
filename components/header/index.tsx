@@ -5,7 +5,6 @@ import { ThemeToggle } from "@/components/header/theme-toggle";
 import { auth } from "@/auth";
 import { SearchBar } from "@/components/header/search-bar";
 import { MobileSidebarButton } from "@/components/header/mobile-sidebar-button";
-import { Button } from "@/components/ui/button";
 import { FilterDropdown } from "@/components/header/filter-dropdown";
 import { AddBookmarkMobile } from "@/components/header/add-bookmark-mobile";
 

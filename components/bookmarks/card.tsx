@@ -8,13 +8,13 @@ import { BsStar, BsStarFill } from "react-icons/bs";
 import { format } from "date-fns";
 import { BookmarkDropdown } from "@/components/bookmarks/bookmark-dropdown";
 import { Tag } from "@/app/api/[[...route]]/bookmarks";
-import { Button } from "../ui/button";
+import { Button } from "@/components/ui/button";
 
 import { autoInvalidatedPaths, cleanUpUrl } from "@/lib/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { client } from "@/lib/hono";
 import { toast } from "sonner";
-import { InfiniteQueryBookmarks } from ".";
+import { InfiniteQueryBookmarks } from "@/components/bookmarks/index";
 import { ModalTypes, useModalStore } from "@/hooks/modal-store";
 
 interface Props {

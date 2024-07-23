@@ -1,9 +1,9 @@
+import Link from "next/link";
 import { Carousel } from "@/components/carousel/index";
 import { InfoAccordian } from "@/components/landing-page/info-accordian";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
-import Link from "next/link";
 
 export default function Home() {
   return (

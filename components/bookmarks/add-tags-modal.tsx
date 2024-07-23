@@ -38,7 +38,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Tag } from "@/app/api/[[...route]]/bookmarks";
 import { useEffect, useState } from "react";
 import { InfiniteQueryBookmarks } from ".";
-import { useSession } from "next-auth/react";
 import { useGetTags } from "@/hooks/use-get-tags";
 import { Loader2 } from "lucide-react";
 import { autoInvalidatedPaths } from "@/lib/utils";
@@ -90,7 +89,7 @@ export function ChangeTagsModal() {
       }
       const { error } = await res.json();
       toast(error);
-      throw error; // why am i throwing here?
+      throw error;
     },
     onSuccess(result, variables) {
       queryClient.setQueryData(
@@ -159,7 +158,6 @@ export function ChangeTagsModal() {
         const deleted = result.deleted;
         const bookmarkId = result.bookmarkId;
 
-        console.log(searchParam, tagsParam);
         if (!searchParam && !tagsParam) {
           queryClient.setQueryData(
             ["userBookmarks", filterParam, searchParam, tagsParam],
@@ -184,22 +182,9 @@ export function ChangeTagsModal() {
             })
           );
         } else {
-          queryClient
-            .getQueryCache()
-            .getAll()
-            .map((cache) =>
-              console.log(JSON.parse(JSON.stringify(cache.queryKey)))
-            );
-          console.log(tagsParam);
           queryClient.invalidateQueries({
             queryKey: ["userBookmarks", filterParam, searchParam, tagsParam],
           });
-          queryClient
-            .getQueryCache()
-            .getAll()
-            .map((cache) =>
-              console.log(JSON.parse(JSON.stringify(cache.queryKey)))
-            );
         }
 
         autoInvalidatedPaths.forEach((path) => {

@@ -1,7 +1,6 @@
 "use client";
 
 import { MutableRefObject } from "react";
-import { useInfiniteQuery } from "@tanstack/react-query";
 import { client } from "@/lib/hono";
 import { useSearchDebounce } from "@/hooks/use-search-debounce";
 
