@@ -46,7 +46,7 @@ export default function Home() {
             Chrome Extension to easily save your bookmarks!
           </h3>
           <Button asChild variant="ghost" className="h-12 w-12 p-0 mt-4">
-            <Link href="/">
+            <Link href="https://chromewebstore.google.com/detail/one-click-bookmarking-ext/noefihmlhgkgmeaggijaloandkofjdnc">
               <FcGoogle className="h-12 w-12" />
             </Link>
           </Button>
